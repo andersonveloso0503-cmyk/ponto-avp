@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F1B2D">
+<title>Ponto AVP</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icone.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icone-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ponto AVP">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" defer></script>
+<style>
+:root{--navy:#0F1B2D;--navy2:#16263D;--linha:#2E4363;--azul:#2563EB;--azul-claro:#8DB4FF;--fundo:#F3F5F8;--texto:#0F1B2D;--cinza:#4A5A70;--ok-bg:#DCF3E8;--ok:#0B5D3B;--alerta-bg:#FDE8D7;--alerta:#8A3307}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:Manrope,system-ui,sans-serif;background:var(--fundo);color:var(--texto);-webkit-font-smoothing:antialiased}
+.tela{display:none;min-height:100dvh;flex-direction:column;max-width:480px;margin:0 auto}
+.tela.ativa{display:flex}
+.escura{background:var(--navy);color:#fff}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+.campo{display:flex;flex-direction:column;gap:8px}
+.campo label{font-size:13px;font-weight:600;color:#D5DEEA}
+.campo input{height:52px;border-radius:12px;border:1px solid var(--linha);background:var(--navy2);color:#fff;font-size:17px;padding:0 16px;width:100%}
+.campo input:focus{outline:2px solid var(--azul-claro);outline-offset:1px}
+.btn{height:56px;border:0;border-radius:14px;background:var(--azul);color:#fff;font-size:17px;font-weight:700;width:100%}
+.btn:disabled{background:#9AA8BB;color:#F3F5F8;cursor:not-allowed}
+.btn-sec{height:50px;border-radius:14px;border:1px solid #C9D2DE;background:#fff;color:var(--texto);font-size:15px;font-weight:700;width:100%}
+.link{background:none;border:0;color:var(--azul-claro);font-weight:600;font-size:14px;padding:10px;text-decoration:underline}
+.erro{background:#3A1E1A;color:#FFD9CC;border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.45;display:none}
+.erro.claro{background:var(--alerta-bg);color:var(--alerta)}
+.topo{background:var(--navy);color:#fff;padding:calc(env(safe-area-inset-top) + 20px) 24px 24px;display:flex;flex-direction:column;gap:2px}
+.topo .linha1{display:flex;justify-content:space-between;align-items:center}
+.icon-btn{width:44px;height:44px;border:0;background:transparent;display:flex;align-items:center;justify-content:center;color:inherit}
+.pilula{display:inline-flex;gap:6px;align-items:center;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;background:#E6EAF0;color:#2B3A50}
+.pilula.ok{background:var(--ok-bg);color:var(--ok)}
+.pilula.ruim{background:var(--alerta-bg);color:var(--alerta)}
+.cartao{background:#fff;border-radius:16px;padding:4px 16px}
+.item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #E6EAF0;font-size:15px}
+.item:last-child{border-bottom:0}
+.item b{font-variant-numeric:tabular-nums}
+.rotulo{margin:0;font-size:13px;font-weight:700;color:var(--cinza);text-transform:uppercase;letter-spacing:.6px}
+.btn-ponto{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:120px;border-radius:22px;border:0;background:var(--azul);color:#fff;width:100%;padding:16px}
+.btn-ponto .t{font-size:22px;font-weight:800}
+.btn-ponto .s{font-size:13px;color:#DCE7FF}
+.btn-ponto.sec{background:#fff;color:var(--texto);border:2px solid #C9D2DE;min-height:64px}
+.btn-ponto.sec .t{font-size:17px}
+.btn-ponto:disabled{background:#9AA8BB;border-color:#9AA8BB;color:#fff;cursor:not-allowed}
+nav.abas{margin-top:auto;background:#fff;border-top:1px solid #E6EAF0;display:grid;grid-template-columns:1fr 1fr;padding:6px 0 calc(env(safe-area-inset-bottom) + 10px);position:sticky;bottom:0}
+nav.abas button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px;color:#5B6B80;font-size:12px;font-weight:700}
+nav.abas button.on{color:var(--azul)}
+.video-box{position:relative;margin:8px 24px 0;border-radius:24px;overflow:hidden;background:#1B2D47;aspect-ratio:3/4}
+.video-box video,.video-box img{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.video-box .oval{position:absolute;left:50%;top:46%;width:58%;height:62%;transform:translate(-50%,-50%);border:3px solid rgba(141,180,255,.9);border-radius:50%;pointer-events:none}
+.info{margin:16px 24px 0;background:var(--navy2);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.info div{display:flex;justify-content:space-between;gap:12px}
+.info span:first-child{color:#B8C4D6}
+.info span:last-child{font-weight:700;text-align:right}
+.carregando{position:fixed;inset:0;background:rgba(15,27,45,.72);display:none;align-items:center;justify-content:center;z-index:50;color:#fff;font-weight:700;flex-direction:column;gap:14px}
+.carregando.on{display:flex}
+.roda{width:42px;height:42px;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:gira 0.8s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.dia{background:#fff;border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.dia .cab{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:700}
+.dia .marcas{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:#2B3A50;font-variant-numeric:tabular-nums}
+.resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.resumo div{background:#fff;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:2px}
+.resumo span{font-size:12px;color:var(--cinza);font-weight:600}
+.resumo b{font-size:22px;font-weight:800}
+.conteudo{padding:24px;display:flex;flex-direction:column;gap:14px}
+.ronda-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #E6EAF0;font-size:15px}
+.ronda-item:last-child{border-bottom:0}
+.ronda-ok{color:#0B5D3B;font-weight:700;font-variant-numeric:tabular-nums;display:inline-flex;gap:6px;align-items:center}
+.ronda-pend{color:#5B6B80;font-weight:600}
+.btn-qr{display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border-radius:16px;border:2px solid var(--azul);background:#fff;color:var(--azul);font-size:16px;font-weight:800;width:100%}
+.btn-qr:disabled{border-color:#C9D2DE;color:#8C9AB0;cursor:not-allowed}
+.mira{position:absolute;left:50%;top:50%;width:64%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.9);border-radius:20px;box-shadow:0 0 0 2000px rgba(15,27,45,.45);pointer-events:none}
+.alerta-ic{width:72px;height:72px;border-radius:50%;background:var(--alerta-bg);display:flex;align-items:center;justify-content:center;margin:0 auto}
+.check{width:72px;height:72px;border-radius:50%;background:var(--ok-bg);display:flex;align-items:center;justify-content:center;margin:0 auto}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<section id="tela-login" class="tela escura" style="padding:calc(env(safe-area-inset-top) + 56px) 28px 32px">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="width:56px;height:56px;border-radius:16px;background:var(--azul);display:flex;align-items:center;justify-content:center">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    </div>
+    <h1 style="margin:0;font-size:32px;font-weight:800;letter-spacing:-.5px">Ponto AVP</h1>
+    <p style="margin:0;font-size:15px;color:#B8C4D6;line-height:1.5">AVP Terceirização · registro de jornada</p>
+  </div>
+  <form id="form-login" style="margin-top:44px;display:flex;flex-direction:column;gap:18px">
+    <div class="campo"><label for="login-cpf">CPF</label><input id="login-cpf" inputmode="numeric" autocomplete="username" placeholder="000.000.000-00" required></div>
+    <div class="campo"><label for="login-senha">Senha</label><input id="login-senha" type="password" autocomplete="current-password" required></div>
+    <div id="login-erro" class="erro" role="alert"></div>
+    <button class="btn" type="submit">Entrar</button>
+    <p style="margin:0;text-align:center;font-size:14px;color:#B8C4D6">Primeiro acesso?<br><button type="button" class="link" onclick="mostrar('tela-primeiro')">Criar senha com CPF e nome</button></p>
+    <p style="margin:0;text-align:center;font-size:13px;color:#8C9AB0">Esqueceu a senha? Fale com o RH para liberar um novo cadastro.</p>
+  </form>
+</section>
+
+<!-- ============ PRIMEIRO ACESSO ============ -->
+<section id="tela-primeiro" class="tela escura" style="padding:calc(env(safe-area-inset-top) + 24px) 28px 32px">
+  <button class="icon-btn" aria-label="Voltar" onclick="mostrar('tela-login')" style="margin-left:-12px">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <h1 style="margin:12px 0 6px;font-size:26px;font-weight:800">Criar minha senha</h1>
+  <p style="margin:0 0 28px;font-size:15px;color:#B8C4D6;line-height:1.5">Use seu CPF e seu nome completo, igual ao cadastro na empresa.</p>
+  <form id="form-primeiro" style="display:flex;flex-direction:column;gap:18px">
+    <div class="campo"><label for="pa-cpf">CPF</label><input id="pa-cpf" inputmode="numeric" placeholder="000.000.000-00" required></div>
+    <div class="campo"><label for="pa-nome">Nome completo</label><input id="pa-nome" autocomplete="name" required></div>
+    <div class="campo"><label for="pa-senha">Crie uma senha (mínimo 6)</label><input id="pa-senha" type="password" autocomplete="new-password" minlength="6" required></div>
+    <div class="campo"><label for="pa-senha2">Repita a senha</label><input id="pa-senha2" type="password" autocomplete="new-password" minlength="6" required></div>
+    <div id="pa-erro" class="erro" role="alert"></div>
+    <button class="btn" type="submit">Criar senha e entrar</button>
+  </form>
+</section>
+
+<!-- ============ BATER PONTO ============ -->
+<section id="tela-home" class="tela">
+  <div class="topo">
+    <div class="linha1">
+      <p style="margin:0;font-size:14px;color:#B8C4D6">Olá,</p>
+      <button class="icon-btn" aria-label="Sair" onclick="sair()" style="color:#B8C4D6;margin-right:-10px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h4v16h-4"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/></svg>
+      </button>
+    </div>
+    <p id="h-nome" style="margin:0;font-size:22px;font-weight:800"></p>
+    <p id="h-posto" style="margin:0;font-size:14px;color:#B8C4D6"></p>
+  </div>
+  <div style="padding:24px 24px 0;display:flex;flex-direction:column;align-items:center;gap:6px">
+    <p id="h-data" style="margin:0;font-size:14px;color:var(--cinza);font-weight:600"></p>
+    <p id="h-hora" style="margin:0;font-size:60px;font-weight:800;letter-spacing:-2px;font-variant-numeric:tabular-nums">--:--</p>
+    <span id="h-gps" class="pilula">Buscando localização…</span>
+  </div>
+  <div id="h-erro" class="erro claro" role="alert" style="margin:16px 24px 0"></div>
+  <div id="h-botoes" style="padding:20px 24px 0;display:flex;flex-direction:column;gap:12px"></div>
+  <div id="h-ronda" style="padding:22px 24px 0;display:none;flex-direction:column;gap:10px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><p class="rotulo">Ronda do posto</p><span id="h-ronda-cont" style="font-size:13px;font-weight:700;color:var(--cinza)"></span></div>
+    <div id="h-ronda-lista" class="cartao"></div>
+    <button id="h-ronda-btn" class="btn-qr" onclick="abrirScanner()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>
+      Ler QR Code da ronda</button>
+    <p id="h-ronda-aviso" style="margin:0;font-size:13px;color:var(--cinza);text-align:center"></p>
+  </div>
+  <div style="padding:22px 24px 24px;display:flex;flex-direction:column;gap:10px">
+    <p class="rotulo">Jornada atual</p>
+    <div id="h-hoje" class="cartao"></div>
+  </div>
+  <nav class="abas">
+    <button class="on" onclick="carregarHome()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Ponto</button>
+    <button onclick="abrirEspelho()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Meu espelho</button>
+  </nav>
+</section>
+
+<!-- ============ SELFIE ============ -->
+<section id="tela-camera" class="tela escura">
+  <div style="padding:calc(env(safe-area-inset-top) + 12px) 16px 8px;display:flex;align-items:center;gap:8px">
+    <button class="icon-btn" aria-label="Voltar" onclick="fecharCamera();carregarHome()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <p id="c-titulo" style="margin:0;font-size:18px;font-weight:700"></p>
+  </div>
+  <div class="video-box">
+    <video id="c-video" playsinline autoplay muted></video>
+    <div class="oval"></div>
+  </div>
+  <div class="info">
+    <div><span>Local</span><span id="c-posto"></span></div>
+    <div><span>Distância do posto</span><span id="c-dist">—</span></div>
+  </div>
+  <div id="c-erro" class="erro" role="alert" style="margin:14px 24px 0"></div>
+  <div style="margin:auto 24px calc(env(safe-area-inset-bottom) + 24px);padding-top:16px;display:flex;flex-direction:column;gap:10px">
+    <button id="c-confirmar" class="btn" style="height:58px;font-weight:800" onclick="confirmarPonto()">Tirar foto e confirmar</button>
+    <p style="margin:0;text-align:center;font-size:12px;color:#B8C4D6">Depois de confirmado, o registro não pode ser apagado.</p>
+  </div>
+</section>
+
+<!-- ============ LER QR DA RONDA ============ -->
+<section id="tela-scan" class="tela escura">
+  <div style="padding:calc(env(safe-area-inset-top) + 12px) 16px 8px;display:flex;align-items:center;gap:8px">
+    <button class="icon-btn" aria-label="Voltar" onclick="fecharScanner();carregarHome()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <p style="margin:0;font-size:18px;font-weight:700">Ler QR Code da ronda</p>
+  </div>
+  <div style="position:relative;margin:8px 24px 0;border-radius:24px;overflow:hidden;background:#1B2D47;aspect-ratio:3/4">
+    <video id="s-video" playsinline autoplay muted style="width:100%;height:100%;object-fit:cover"></video>
+    <div class="mira"></div>
+  </div>
+  <p style="margin:16px 24px 0;text-align:center;font-size:15px;color:#D5DEEA">Aponte a câmera para o QR Code colado no ponto da ronda.</p>
+  <div id="s-erro" class="erro" role="alert" style="margin:14px 24px 0"></div>
+</section>
+
+<!-- ============ RESULTADO DA RONDA ============ -->
+<section id="tela-ronda" class="tela">
+  <div class="conteudo" style="padding-top:calc(env(safe-area-inset-top) + 48px)">
+    <div id="r-icone"></div>
+    <h1 id="r-titulo" style="margin:4px 0 0;text-align:center;font-size:24px;font-weight:800"></h1>
+    <p id="r-sub" style="margin:0;text-align:center;color:var(--cinza);line-height:1.5"></p>
+    <div id="r-dados" class="cartao"></div>
+    <button class="btn" onclick="abrirScanner()">Ler próximo ponto</button>
+    <button class="btn-sec" onclick="carregarHome()">Voltar ao início</button>
+  </div>
+</section>
+
+<!-- ============ COMPROVANTE ============ -->
+<section id="tela-comprovante" class="tela">
+  <div class="conteudo" style="padding-top:calc(env(safe-area-inset-top) + 40px)">
+    <div class="check"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0B5D3B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>
+    <h1 id="cp-titulo" style="margin:4px 0 0;text-align:center;font-size:24px;font-weight:800"></h1>
+    <p style="margin:0;text-align:center;color:var(--cinza)">Comprovante de registro de ponto</p>
+    <div id="cp-dados" class="cartao"></div>
+    <button class="btn-sec" onclick="baixarComprovante()">Baixar comprovante (imagem)</button>
+    <button class="btn" onclick="carregarHome()">Voltar ao início</button>
+  </div>
+</section>
+
+<!-- ============ ESPELHO ============ -->
+<section id="tela-espelho" class="tela">
+  <div class="conteudo" style="padding-top:calc(env(safe-area-inset-top) + 32px)">
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <h1 style="margin:0;font-size:26px;font-weight:800">Meu espelho</h1>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="icon-btn" aria-label="Mês anterior" onclick="mudarMes(-1)" style="margin-left:-12px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <p id="e-mes" style="margin:0;font-size:15px;color:var(--cinza);font-weight:600;min-width:130px;text-align:center"></p>
+        <button class="icon-btn" aria-label="Próximo mês" onclick="mudarMes(1)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    <div class="resumo">
+      <div><span>Dias</span><b id="e-dias">0</b></div>
+      <div><span>Horas</span><b id="e-horas">0h</b></div>
+      <div><span>Em aberto</span><b id="e-bloq">0</b></div>
+    </div>
+    <div id="e-lista" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+  <nav class="abas">
+    <button onclick="carregarHome()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Ponto</button>
+    <button class="on" onclick="abrirEspelho()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Meu espelho</button>
+  </nav>
+</section>
+
+<div id="carregando" class="carregando" aria-live="polite"><div class="roda"></div><span id="carregando-txt">Aguarde…</span></div>
+
+<script>
+const CFG = window.PONTO_CONFIG;
+const sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+const TZ = 'America/Sao_Paulo';
+const NOMES = { entrada: 'Entrada', saida_intervalo: 'Saída p/ intervalo', volta_intervalo: 'Volta do intervalo', saida: 'Saída' };
+const PRECISAO_MAX = 200;
+
+let scanStream = null, scanLoop = null, scanOcupado = false, rondaPendente = null;
+let status = null, posAtual = null, watchId = null, relogio = null, stream = null, tipoEscolhido = null, ultimoComprovante = null, mesEspelho = null;
+
+// ---------- utilidades ----------
+const $ = id => document.getElementById(id);
+const soDigitos = s => (s || '').replace(/\D/g, '');
+const emailDe = cpf => soDigitos(cpf) + '@' + CFG.EMAIL_DOMINIO;
+function mostrar(id) { document.querySelectorAll('.tela').forEach(t => t.classList.toggle('ativa', t.id === id)); window.scrollTo(0, 0); }
+function carregando(on, txt) { $('carregando').classList.toggle('on', on); $('carregando-txt').textContent = txt || 'Aguarde…'; }
+function erro(id, msg) { const el = $(id); el.textContent = msg || ''; el.style.display = msg ? 'block' : 'none'; }
+const hora = d => new Date(d).toLocaleTimeString('pt-BR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+const dataHora = d => new Date(d).toLocaleString('pt-BR', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const fmtCpf = c => soDigitos(c).replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+function mascaraCpf(el) { el.addEventListener('input', () => { let v = soDigitos(el.value).slice(0, 11); v = v.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'); el.value = v; }); }
+mascaraCpf($('login-cpf')); mascaraCpf($('pa-cpf'));
+
+function distancia(lat1, lng1, lat2, lng2) {
+  const r = Math.PI / 180, a = Math.sin((lat2 - lat1) * r / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin((lng2 - lng1) * r / 2) ** 2;
+  return 6371000 * 2 * Math.asin(Math.sqrt(a));
+}
+function fmtDist(m) { return m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : Math.round(m) + ' m'; }
+
+// ---------- login ----------
+$('form-login').addEventListener('submit', async e => {
+  e.preventDefault(); erro('login-erro');
+  const cpf = soDigitos($('login-cpf').value);
+  if (cpf.length !== 11) return erro('login-erro', 'Digite os 11 números do CPF.');
+  carregando(true, 'Entrando…');
+  const { error } = await sb.auth.signInWithPassword({ email: emailDe(cpf), password: $('login-senha').value });
+  carregando(false);
+  if (error) return erro('login-erro', 'CPF ou senha incorretos. Primeiro acesso? Toque em "Criar senha".');
+  carregarHome();
+});
+
+$('form-primeiro').addEventListener('submit', async e => {
+  e.preventDefault(); erro('pa-erro');
+  const cpf = soDigitos($('pa-cpf').value), nome = $('pa-nome').value.trim(), s1 = $('pa-senha').value, s2 = $('pa-senha2').value;
+  if (cpf.length !== 11) return erro('pa-erro', 'Digite os 11 números do CPF.');
+  if (s1.length < 6) return erro('pa-erro', 'A senha precisa ter pelo menos 6 caracteres.');
+  if (s1 !== s2) return erro('pa-erro', 'As senhas não são iguais.');
+  carregando(true, 'Conferindo cadastro…');
+  try {
+    const { data: v, error: e1 } = await sb.rpc('primeiro_acesso_valido', { p_cpf: cpf, p_nome: nome });
+    if (e1) throw e1;
+    if (!v.ok) { carregando(false); return erro('pa-erro', v.motivo); }
+    const { data: su, error: e2 } = await sb.auth.signUp({ email: emailDe(cpf), password: s1 });
+    if (e2) throw new Error(/registered|already/i.test(e2.message) ? 'Este CPF já tem uma conta. Use "Entrar" ou fale com o RH.' : e2.message);
+    if (!su.session) throw new Error('Conta criada, mas o sistema pediu confirmação de e-mail. Avise o RH (configuração do Supabase).');
+    const { data: lk, error: e3 } = await sb.rpc('vincular_conta', { p_nome: nome });
+    if (e3) throw e3;
+    if (!lk.ok) { await sb.auth.signOut(); throw new Error(lk.motivo); }
+    carregando(false);
+    carregarHome();
+  } catch (err) { carregando(false); erro('pa-erro', err.message || 'Erro ao criar a senha.'); }
+});
+
+async function sair() { pararGps(); await sb.auth.signOut(); status = null; mostrar('tela-login'); }
+
+// ---------- tela principal ----------
+async function carregarHome() {
+  fecharCamera(); fecharScanner();
+  mostrar('tela-home'); erro('h-erro');
+  iniciarRelogio();
+  const { data, error } = await sb.rpc('meu_status');
+  if (error || !data || !data.ok) {
+    erro('h-erro', (data && data.motivo) || 'Não foi possível carregar seus dados. Verifique a internet.');
+    if (data && data.motivo === 'Cadastro não encontrado.') { await sb.auth.signOut(); mostrar('tela-login'); erro('login-erro', 'Seu acesso não está ligado a um cadastro. Fale com o RH.'); }
+    return;
+  }
+  status = data;
+  $('h-nome').textContent = data.colaborador.nome;
+  $('h-posto').textContent = [data.colaborador.funcao, data.posto ? 'Posto ' + data.posto.nome : 'Sem posto definido'].filter(Boolean).join(' · ');
+  // jornada
+  const hoje = data.hoje || [];
+  $('h-hoje').innerHTML = hoje.length
+    ? hoje.map(r => `<div class="item"><span>${NOMES[r.tipo]}</span><b>${hora(r.registrado_em)}</b></div>`).join('')
+    : '<div class="item"><span style="color:#5B6B80">Nenhum registro na jornada atual</span></div>';
+  if (!data.colaborador.ativo) erro('h-erro', 'Seu cadastro está inativo. Fale com o RH.');
+  else if (!data.posto) erro('h-erro', 'Você ainda não foi ligado a um posto. Fale com o RH.');
+  desenharBotoes();
+  desenharRonda();
+  iniciarGps();
+  if (rondaPendente) { const cod = rondaPendente; rondaPendente = null; try { sessionStorage.removeItem('ronda_pendente'); } catch (e) {} registrarRonda(cod); }
+}
+
+function desenharRonda() {
+  const lista = (status && status.ronda) || [];
+  $('h-ronda').style.display = lista.length ? 'flex' : 'none';
+  if (!lista.length) return;
+  const feitos = lista.filter(p => p.ultima).length;
+  $('h-ronda-cont').textContent = `${feitos} de ${lista.length} nesta jornada`;
+  $('h-ronda-lista').innerHTML = lista.map(p => `<div class="ronda-item"><span>${p.nome.replace(/</g, '&lt;')}</span>${p.ultima
+    ? `<span class="ronda-ok"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>${hora(p.ultima)}</span>`
+    : '<span class="ronda-pend">pendente</span>'}</div>`).join('');
+  const p = status.permitidos || [];
+  const emJornada = !p.includes('entrada') && !(p.length === 1 && p[0] === 'volta_intervalo');
+  $('h-ronda-btn').disabled = !emJornada;
+  $('h-ronda-aviso').textContent = emJornada ? '' : (p.includes('entrada') ? 'Bata a entrada para liberar a ronda.' : 'Registre a volta do intervalo para liberar a ronda.');
+}
+
+function iniciarRelogio() {
+  const tick = () => {
+    const n = new Date();
+    $('h-hora').textContent = n.toLocaleTimeString('pt-BR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+    const d = n.toLocaleDateString('pt-BR', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long' });
+    $('h-data').textContent = d.charAt(0).toUpperCase() + d.slice(1);
+  };
+  tick(); clearInterval(relogio); relogio = setInterval(tick, 10000);
+}
+
+function situacaoGps() {
+  if (!status || !status.posto) return { ok: false, txt: 'Sem posto' };
+  if (!posAtual) return { ok: false, txt: 'Buscando localização…', esperando: true };
+  const d = distancia(posAtual.lat, posAtual.lng, status.posto.lat, status.posto.lng);
+  if (posAtual.precisao > PRECISAO_MAX) return { ok: false, d, txt: `GPS fraco (±${Math.round(posAtual.precisao)} m) — vá para área aberta` };
+  if (d > status.posto.raio_m) return { ok: false, d, txt: `Longe do posto: ${fmtDist(d)} (limite ${status.posto.raio_m} m)` };
+  return { ok: true, d, txt: `Você está no posto (${fmtDist(d)})` };
+}
+
+function desenharBotoes() {
+  const box = $('h-botoes');
+  if (!status || !status.posto || !status.colaborador.ativo) { box.innerHTML = ''; return; }
+  const g = situacaoGps();
+  const pill = $('h-gps');
+  pill.className = 'pilula ' + (g.ok ? 'ok' : (g.esperando ? '' : 'ruim'));
+  pill.textContent = g.txt;
+  const p = status.permitidos || ['entrada'];
+  box.innerHTML = p.map((t, i) => `
+    <button class="btn-ponto ${i ? 'sec' : ''}" ${g.ok ? '' : 'disabled'} onclick="abrirCamera('${t}')">
+      <span class="t">Registrar ${NOMES[t].toLowerCase()}</span>
+      ${i ? '' : `<span class="s">${g.ok ? 'tira a selfie e grava a localização' : 'disponível quando estiver no posto'}</span>`}
+    </button>`).join('');
+}
+
+// ---------- GPS ----------
+function iniciarGps() {
+  if (!('geolocation' in navigator)) { erro('h-erro', 'Este celular não tem GPS disponível no navegador.'); return; }
+  if (watchId !== null) return;
+  watchId = navigator.geolocation.watchPosition(
+    p => { posAtual = { lat: p.coords.latitude, lng: p.coords.longitude, precisao: p.coords.accuracy }; desenharBotoes(); atualizarDistCamera(); },
+    e => {
+      const msg = e.code === 1 ? 'Permita o acesso à localização para bater o ponto (nas configurações do navegador).' : 'Não foi possível pegar a localização. Ligue o GPS.';
+      $('h-gps').className = 'pilula ruim'; $('h-gps').textContent = 'Localização indisponível'; erro('h-erro', msg);
+    },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
+}
+function pararGps() { if (watchId !== null) navigator.geolocation.clearWatch(watchId); watchId = null; posAtual = null; }
+function posicaoFresca() {
+  return new Promise((ok, falha) => navigator.geolocation.getCurrentPosition(
+    p => ok({ lat: p.coords.latitude, lng: p.coords.longitude, precisao: p.coords.accuracy }),
+    e => falha(new Error(e.code === 1 ? 'Permita o acesso à localização.' : 'Não foi possível pegar a localização. Ligue o GPS.')),
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 25000 }));
+}
+
+// ---------- câmera ----------
+async function abrirCamera(tipo) {
+  fecharScanner();
+  tipoEscolhido = tipo;
+  $('c-titulo').textContent = 'Registrar ' + NOMES[tipo].toLowerCase();
+  $('c-posto').textContent = status.posto.nome;
+  erro('c-erro'); atualizarDistCamera();
+  $('c-confirmar').disabled = false;
+  mostrar('tela-camera');
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } }, audio: false });
+    $('c-video').srcObject = stream;
+  } catch (e) {
+    erro('c-erro', 'Permita o acesso à câmera para tirar a selfie (nas configurações do navegador).');
+    $('c-confirmar').disabled = true;
+  }
+}
+function atualizarDistCamera() { if ($('tela-camera').classList.contains('ativa')) { const g = situacaoGps(); $('c-dist').textContent = g.d != null ? fmtDist(g.d) + (g.ok ? ' · dentro do raio' : ' · fora do raio') : '—'; } }
+function fecharCamera() { if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; }
+
+function capturarFoto() {
+  const v = $('c-video');
+  if (!v.videoWidth) throw new Error('A câmera ainda não abriu. Aguarde um segundo e tente de novo.');
+  const w = 480, h = Math.round(v.videoHeight * (w / v.videoWidth));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d'); ctx.translate(w, 0); ctx.scale(-1, 1); ctx.drawImage(v, 0, 0, w, h);
+  return new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.72));
+}
+
+async function confirmarPonto() {
+  erro('c-erro');
+  $('c-confirmar').disabled = true;
+  try {
+    const foto = await capturarFoto();
+    carregando(true, 'Pegando sua localização…');
+    const pos = await posicaoFresca();
+    carregando(true, 'Enviando selfie…');
+    const { data: u } = await sb.auth.getUser();
+    const caminho = `${u.user.id}/${Date.now()}.jpg`;
+    const { error: eUp } = await sb.storage.from('selfies').upload(caminho, foto, { contentType: 'image/jpeg' });
+    if (eUp) throw new Error('Falha ao enviar a selfie. Verifique a internet.');
+    carregando(true, 'Registrando ponto…');
+    const { data, error } = await sb.rpc('bater_ponto', {
+      p_lat: pos.lat, p_lng: pos.lng, p_precisao: pos.precisao, p_foto: caminho,
+      p_tipo: tipoEscolhido, p_dispositivo: navigator.userAgent
+    });
+    carregando(false);
+    if (error) throw new Error('Erro no servidor: ' + error.message);
+    if (!data.ok) { erro('c-erro', data.motivo); $('c-confirmar').disabled = false; return; }
+    fecharCamera();
+    mostrarComprovante(data);
+  } catch (e) {
+    carregando(false); erro('c-erro', e.message || 'Não foi possível registrar.'); $('c-confirmar').disabled = false;
+  }
+}
+
+// ---------- comprovante ----------
+function mostrarComprovante(d) {
+  ultimoComprovante = d;
+  const r = d.registro;
+  $('cp-titulo').textContent = NOMES[r.tipo] + ' registrada às ' + hora(r.registrado_em);
+  const linhas = [
+    ['Empregador', CFG.EMPRESA.razao_social], ['CNPJ', CFG.EMPRESA.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')],
+    ['Colaborador', d.colaborador.nome], ['CPF', fmtCpf(d.colaborador.cpf)], ['Tipo', NOMES[r.tipo]],
+    ['Data e hora', dataHora(r.registrado_em)], ['Posto', d.posto.nome], ['Distância', r.distancia_m + ' m'],
+    ['NSR', String(r.nsr).padStart(9, '0')], ['Código', r.hash.slice(0, 16).toUpperCase()]
+  ];
+  $('cp-dados').innerHTML = linhas.map(([a, b]) => `<div class="item"><span style="color:#4A5A70">${a}</span><b style="text-align:right">${b}</b></div>`).join('');
+  mostrar('tela-comprovante');
+}
+
+function baixarComprovante() {
+  const d = ultimoComprovante; if (!d) return;
+  const r = d.registro, c = document.createElement('canvas'), W = 720, H = 980;
+  c.width = W; c.height = H; const x = c.getContext('2d');
+  x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#0F1B2D'; x.fillRect(0, 0, W, 150);
+  x.fillStyle = '#fff'; x.font = '800 40px Manrope, sans-serif'; x.fillText('Comprovante de ponto', 40, 80);
+  x.font = '500 24px Manrope, sans-serif'; x.fillStyle = '#B8C4D6'; x.fillText(CFG.EMPRESA.razao_social, 40, 120);
+  const L = [['CNPJ', CFG.EMPRESA.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')], ['Colaborador', d.colaborador.nome], ['CPF', fmtCpf(d.colaborador.cpf)],
+    ['Tipo', NOMES[r.tipo]], ['Data e hora', dataHora(r.registrado_em)], ['Posto', d.posto.nome], ['Distância do posto', r.distancia_m + ' m'], ['NSR', String(r.nsr).padStart(9, '0')]];
+  let y = 220;
+  L.forEach(([a, b]) => { x.fillStyle = '#4A5A70'; x.font = '600 22px Manrope, sans-serif'; x.fillText(a, 40, y); x.fillStyle = '#0F1B2D'; x.font = '700 28px Manrope, sans-serif'; x.fillText(String(b).slice(0, 40), 40, y + 36); y += 82; });
+  x.fillStyle = '#4A5A70'; x.font = '600 20px Manrope, sans-serif'; x.fillText('Código de verificação (SHA-256)', 40, y + 10);
+  x.font = '500 18px monospace'; x.fillStyle = '#0F1B2D'; x.fillText(r.hash.slice(0, 32), 40, y + 42); x.fillText(r.hash.slice(32), 40, y + 68);
+  c.toBlob(b => { const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `comprovante-ponto-${String(r.nsr).padStart(9, '0')}.png`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); }, 'image/png');
+}
+
+// ---------- ronda (QR Code) ----------
+function extrairCodigo(texto) {
+  texto = (texto || '').trim();
+  try { const u = new URL(texto); const c = u.searchParams.get('ronda'); if (c) return c; } catch (e) {}
+  return /^[A-Za-z0-9_-]{4,64}$/.test(texto) ? texto : null;
+}
+
+async function abrirScanner() {
+  pararGps(); fecharCamera(); erro('s-erro'); scanOcupado = false;
+  mostrar('tela-scan');
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    const v = $('s-video'); v.srcObject = scanStream; await v.play().catch(() => {});
+  } catch (e) { return erro('s-erro', 'Permita o acesso à câmera para ler o QR Code (nas configurações do navegador).'); }
+  const detector = ('BarcodeDetector' in window) ? new BarcodeDetector({ formats: ['qr_code'] }) : null;
+  const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const passo = async () => {
+    if (!scanStream) return;
+    const v = $('s-video');
+    if (!scanOcupado && v.readyState >= 2 && v.videoWidth) {
+      let texto = null;
+      try {
+        if (detector) { const r = await detector.detect(v); if (r.length) texto = r[0].rawValue; }
+        else if (window.jsQR) {
+          const w = 480, h = Math.round(v.videoHeight * w / v.videoWidth); canvas.width = w; canvas.height = h;
+          ctx.drawImage(v, 0, 0, w, h); const r = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'dontInvert' });
+          if (r) texto = r.data;
+        }
+      } catch (e) {}
+      if (texto) {
+        const cod = extrairCodigo(texto);
+        if (cod) { scanOcupado = true; if (navigator.vibrate) navigator.vibrate(80); fecharScanner(); registrarRonda(cod); return; }
+        erro('s-erro', 'Este QR Code não é de ronda do Ponto AVP.');
+      }
+    }
+    scanLoop = requestAnimationFrame(passo);
+  };
+  scanLoop = requestAnimationFrame(passo);
+}
+function fecharScanner() { if (scanLoop) cancelAnimationFrame(scanLoop); scanLoop = null; if (scanStream) scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+
+async function registrarRonda(codigo) {
+  carregando(true, 'Pegando sua localização…');
+  let data, falha;
+  try {
+    const pos = await posicaoFresca();
+    carregando(true, 'Registrando ronda…');
+    const res = await sb.rpc('registrar_ronda', { p_codigo: codigo, p_lat: pos.lat, p_lng: pos.lng, p_precisao: pos.precisao });
+    if (res.error) throw new Error('Erro no servidor: ' + res.error.message);
+    data = res.data;
+  } catch (e) { falha = e.message || 'Não foi possível registrar a ronda.'; }
+  carregando(false);
+  const ok = data && data.ok;
+  $('r-icone').innerHTML = ok
+    ? '<div class="check"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0B5D3B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></div>'
+    : '<div class="alerta-ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#8A3307" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></svg></div>';
+  $('r-titulo').textContent = ok ? 'Ronda registrada' : 'Ronda não registrada';
+  $('r-sub').textContent = ok ? '' : (falha || data.motivo);
+  $('r-dados').style.display = ok ? 'block' : 'none';
+  if (ok) $('r-dados').innerHTML = [['Ponto', data.ponto], ['Posto', data.posto], ['Horário', dataHora(data.registrado_em)], ['Distância do posto', data.distancia_m + ' m']]
+    .map(([a, b]) => `<div class="item"><span style="color:#4A5A70">${a}</span><b style="text-align:right">${String(b).replace(/</g, '&lt;')}</b></div>`).join('');
+  mostrar('tela-ronda');
+}
+
+// ---------- espelho ----------
+function agrupaJornadas(regs) {
+  const jornadas = []; let atual = null;
+  regs.forEach(r => {
+    if (r.tipo === 'entrada' || !atual) { atual = { inicio: r.registrado_em, marcas: [] }; jornadas.push(atual); }
+    atual.marcas.push(r);
+  });
+  jornadas.forEach(j => {
+    let ms = 0, ini = null, aberta = false;
+    j.marcas.forEach(m => {
+      if (m.tipo === 'entrada' || m.tipo === 'volta_intervalo') { ini = new Date(m.registrado_em); aberta = true; }
+      else if (ini) { ms += new Date(m.registrado_em) - ini; ini = null; aberta = m.tipo !== 'saida'; }
+    });
+    j.ms = ms; j.completa = j.marcas[j.marcas.length - 1].tipo === 'saida';
+  });
+  return jornadas;
+}
+const fmtHoras = ms => { const m = Math.round(ms / 60000); return Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0'); };
+
+async function abrirEspelho() {
+  pararGps(); mostrar('tela-espelho');
+  if (!mesEspelho) { const n = new Date(); mesEspelho = new Date(n.getFullYear(), n.getMonth(), 1); }
+  carregarEspelho();
+}
+function mudarMes(d) { mesEspelho = new Date(mesEspelho.getFullYear(), mesEspelho.getMonth() + d, 1); carregarEspelho(); }
+async function carregarEspelho() {
+  const ini = mesEspelho, fim = new Date(ini.getFullYear(), ini.getMonth() + 1, 1);
+  const nomeMes = ini.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  $('e-mes').textContent = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1);
+  $('e-lista').innerHTML = '<p style="color:#4A5A70">Carregando…</p>';
+  const { data, error } = await sb.from('registros').select('id,tipo,registrado_em,distancia_m')
+    .gte('registrado_em', ini.toISOString()).lt('registrado_em', fim.toISOString()).order('registrado_em');
+  if (error) { $('e-lista').innerHTML = '<p style="color:#8A3307">Não foi possível carregar.</p>'; return; }
+  const js = agrupaJornadas(data || []);
+  $('e-dias').textContent = js.length;
+  $('e-horas').textContent = fmtHoras(js.reduce((s, j) => s + j.ms, 0));
+  $('e-bloq').textContent = js.filter(j => !j.completa).length;
+  $('e-lista').innerHTML = js.length ? js.slice().reverse().map(j => {
+    const d = new Date(j.inicio).toLocaleDateString('pt-BR', { timeZone: TZ, weekday: 'short', day: '2-digit', month: '2-digit' });
+    return `<div class="dia"><div class="cab"><span>${d.charAt(0).toUpperCase() + d.slice(1)}</span><span style="font-size:13px;color:${j.completa ? '#0B6B43' : '#1D4ED8'}">${j.completa ? fmtHoras(j.ms) : 'Em aberto'}</span></div>
+      <div class="marcas">${j.marcas.map(m => `<span><span style="color:#4A5A70">${NOMES[m.tipo]}:</span> <b>${hora(m.registrado_em)}</b></span>`).join('')}</div></div>`;
+  }).join('') : '<p style="color:#4A5A70">Nenhum registro neste mês.</p>';
+}
+
+// ---------- início ----------
+(async () => {
+  if (CFG.SUPABASE_URL.includes('SEU-PROJETO')) { mostrar('tela-login'); erro('login-erro', 'App ainda não configurado: preencha o config.js com os dados do Supabase.'); return; }
+  const cod = new URLSearchParams(location.search).get('ronda');
+  if (cod) { rondaPendente = cod; try { sessionStorage.setItem('ronda_pendente', cod); } catch (e) {} history.replaceState(null, '', location.pathname); }
+  else { try { rondaPendente = sessionStorage.getItem('ronda_pendente'); } catch (e) {} }
+  const { data } = await sb.auth.getSession();
+  if (data.session) carregarHome();
+  else { mostrar('tela-login'); if (rondaPendente) erro('login-erro', 'Entre com seu CPF e senha para registrar a ronda.'); }
+})();
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0F1B2D">
 <title>Ponto AVP · Painel</title>
-<link rel="icon" href="icone.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.png" type="image/png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -91,6 +91,7 @@ td .peq{font-size:12px;color:var(--cinza)}
 
 <div id="login" class="login">
   <form id="form-login">
+    <img src="logo.png" alt="Logo LCS Terceirização" style="width:96px;height:auto;align-self:center">
     <h1 style="font-size:24px">Ponto AVP · Painel</h1>
     <p class="sub" style="margin:0">Acesso do empregador</p>
     <label>E-mail<input id="l-email" type="email" autocomplete="username" required></label>
@@ -102,7 +103,7 @@ td .peq{font-size:12px;color:var(--cinza)}
 
 <div id="app" class="app">
   <aside>
-    <p class="marca">Ponto AVP</p>
+    <p class="marca" style="display:flex;align-items:center;gap:10px"><img src="logo.png" alt="" style="width:40px;height:40px;object-fit:contain;background:#fff;border-radius:10px;padding:3px">Ponto AVP</p>
     <button data-sec="hoje" class="on">Hoje</button>
     <button data-sec="espelho">Espelho de ponto</button>
     <button data-sec="colab">Colaboradores</button>

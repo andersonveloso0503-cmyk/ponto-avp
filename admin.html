@@ -7,6 +7,8 @@
 <title>Ponto AVP · Painel</title>
 <link rel="icon" href="favicon.png" type="image/png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -68,6 +70,11 @@ td .peq{font-size:12px;color:var(--cinza)}
 .linha-info{display:flex;justify-content:space-between;gap:10px;font-size:14px;border-bottom:1px solid #EEF1F5;padding:6px 0}
 .linha-info span:first-child{color:var(--cinza)}
 .linha-info span:last-child{font-weight:700;text-align:right}
+#mapa{height:340px;border-radius:12px;border:1px solid #C9D2DE;z-index:0}
+.busca-res{display:flex;flex-direction:column;gap:6px}
+.busca-res button{text-align:left;border:1px solid #C9D2DE;background:#fff;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.4;color:var(--texto)}
+.busca-res button:hover{border-color:var(--azul);background:#EAF1FF}
+.span-todo{grid-column:1/-1}
 .grupo td{background:#F3F5F8;font-weight:800;font-size:13px;color:var(--cinza);text-transform:uppercase;letter-spacing:.5px}
 .ronda-box{background:#fff;border-radius:16px;padding:20px;display:none;flex-direction:column;gap:14px;border:2px solid #C9D7F5}
 .ronda-box.on{display:flex}
@@ -188,13 +195,17 @@ td .peq{font-size:12px;color:var(--cinza)}
     <!-- POSTOS -->
     <section id="sec-postos" class="secao">
       <div class="cab"><div><h1>Postos e raio GPS</h1><p class="sub">O ponto só é aceito dentro do raio do posto do colaborador.</p></div></div>
-      <div class="aviso">Dica: no Google Maps, segure o dedo em cima do prédio e copie os números que aparecem (ex.: <b>-30.1234, -51.2345</b>). Cole no campo "Coordenadas". Ou, estando no posto, toque em "Usar minha localização".</div>
+      <div class="aviso"><b>Como marcar o local:</b> digite o endereço do posto e clique em <b>Localizar</b>. Escolha o resultado certo e confira no mapa: se o pino não estiver exatamente no prédio, <b>clique no lugar certo do mapa</b> ou arraste o pino. O círculo azul mostra até onde o ponto é aceito.</div>
       <form id="form-posto" class="form" onsubmit="salvarPosto(event)">
         <input type="hidden" id="p-id">
         <label>Nome do posto<input id="p-nome" required placeholder="Carrara"></label>
-        <label>Endereço<input id="p-end" placeholder="Rua, número"></label>
-        <label>Coordenadas (lat, lng)<input id="p-coord" required placeholder="-30.1234, -51.2345"></label>
-        <label>Raio permitido (metros)<input id="p-raio" type="number" min="20" max="5000" value="150" required></label>
+        <label class="span-todo">Endereço do posto
+          <span style="display:flex;gap:8px"><input id="p-end" placeholder="Ex.: Av. Juca Batista, 1700, Porto Alegre" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarEndereco()}"><button class="btn" type="button" onclick="buscarEndereco()">Localizar</button></span>
+        </label>
+        <div id="p-resultados" class="busca-res span-todo"></div>
+        <div class="span-todo"><div id="mapa" role="application" aria-label="Mapa para marcar o local do posto"></div></div>
+        <label>Local marcado (automático)<input id="p-coord" required placeholder="clique no mapa" readonly style="background:#F3F5F8"></label>
+        <label>Raio permitido (metros)<input id="p-raio" type="number" min="20" max="5000" value="150" required oninput="atualizarCirculo()"></label>
         <label>Situação<select id="p-ativo"><option value="true">Ativo</option><option value="false">Inativo</option></select></label>
         <div class="acoes">
           <button class="btn sec" type="button" onclick="usarMinhaLocalizacao()">Usar minha localização</button>
@@ -319,7 +330,7 @@ async function iniciar() {
 document.querySelectorAll('aside button[data-sec]').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('aside button[data-sec]').forEach(x => x.classList.toggle('on', x === b));
   document.querySelectorAll('.secao').forEach(s => s.classList.toggle('on', s.id === 'sec-' + b.dataset.sec));
-  ({ hoje: carregarHoje, colab: desenharColab, postos: desenharPostos, bloq: carregarBloq })[b.dataset.sec]?.();
+  ({ hoje: carregarHoje, colab: desenharColab, postos: () => { desenharPostos(); iniciarMapa(); }, rondas: null, bloq: carregarBloq })[b.dataset.sec]?.();
 }));
 
 async function carregarBase() {
@@ -586,6 +597,57 @@ async function importarColab(input) {
   msg('colab-msg', `${regs.length} colaboradores importados/atualizados.` + (naoAchou.size ? ` Postos não encontrados (cadastre e importe de novo): ${[...naoAchou].join(', ')}.` : ''), !naoAchou.size);
 }
 
+// ---------- MAPA DO POSTO ----------
+let mapa = null, pino = null, circulo = null;
+function iniciarMapa() {
+  if (!window.L) return;
+  if (!mapa) {
+    mapa = L.map('mapa').setView([-30.0346, -51.2177], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(mapa);
+    mapa.on('click', e => marcarLocal(e.latlng.lat, e.latlng.lng));
+  }
+  setTimeout(() => mapa.invalidateSize(), 50);
+}
+function marcarLocal(lat, lng, zoom) {
+  if (!mapa) iniciarMapa();
+  if (!mapa) { $('p-coord').value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`; return; }
+  if (!pino) {
+    pino = L.marker([lat, lng], { draggable: true }).addTo(mapa);
+    pino.on('dragend', () => { const p = pino.getLatLng(); marcarLocal(p.lat, p.lng); });
+    circulo = L.circle([lat, lng], { radius: +$('p-raio').value || 150, color: '#2563EB', weight: 2, fillOpacity: .12 }).addTo(mapa);
+  }
+  pino.setLatLng([lat, lng]); circulo.setLatLng([lat, lng]); atualizarCirculo();
+  $('p-coord').value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+  if (zoom) mapa.setView([lat, lng], zoom); else if (!mapa.getBounds().contains([lat, lng])) mapa.panTo([lat, lng]);
+}
+function atualizarCirculo() { if (circulo) circulo.setRadius(Math.max(20, +$('p-raio').value || 150)); }
+function limparMapa() {
+  if (pino) { mapa.removeLayer(pino); mapa.removeLayer(circulo); pino = circulo = null; }
+  if (mapa) mapa.setView([-30.0346, -51.2177], 12);
+  $('p-resultados').innerHTML = '';
+}
+async function buscarEndereco() {
+  const q = $('p-end').value.trim();
+  if (q.length < 5) return msg('posto-msg', 'Digite o endereço com rua e número.');
+  msg('posto-msg'); $('p-resultados').innerHTML = '<span class="sub">Procurando…</span>';
+  const texto = /porto alegre|\b(rs|sc|pr|sp|rj)\b/i.test(q) ? q : q + ', Porto Alegre, RS';
+  try {
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=br&limit=5&addressdetails=0&q=' + encodeURIComponent(texto), { headers: { 'Accept-Language': 'pt-BR' } });
+    const lista = await r.json();
+    if (!lista.length) { $('p-resultados').innerHTML = ''; return msg('posto-msg', 'Não achei esse endereço. Tente só "rua, número, bairro" ou clique direto no mapa.'); }
+    window._resultados = lista;
+    $('p-resultados').innerHTML = '<span class="sub" style="margin:0">Escolha o endereço certo:</span>' +
+      lista.map((x, i) => `<button type="button" onclick="escolherResultado(${i})">${esc(x.display_name)}</button>`).join('');
+    if (lista.length === 1) escolherResultado(0);
+  } catch (e) { $('p-resultados').innerHTML = ''; msg('posto-msg', 'Não consegui buscar o endereço agora. Clique direto no mapa para marcar o local.'); }
+}
+function escolherResultado(i) {
+  const x = window._resultados[i];
+  marcarLocal(+x.lat, +x.lon, 18);
+  $('p-resultados').innerHTML = '';
+  msg('posto-msg', 'Local marcado. Confira no mapa: se o pino não estiver no prédio certo, clique no lugar exato.', true);
+}
+
 // ---------- POSTOS ----------
 function desenharPostos() {
   $('postos-corpo').innerHTML = postos.length ? postos.map(p => `<tr>
@@ -601,20 +663,21 @@ function editarPosto(id) {
   const p = postos.find(x => x.id === id);
   $('p-id').value = p.id; $('p-nome').value = p.nome; $('p-end').value = p.endereco || ''; $('p-coord').value = `${p.lat}, ${p.lng}`;
   $('p-raio').value = p.raio_m; $('p-ativo').value = String(p.ativo); $('p-salvar').textContent = 'Salvar alterações';
+  iniciarMapa(); marcarLocal(p.lat, p.lng, 18);
   $('form-posto').scrollIntoView({ behavior: 'smooth' });
 }
-function limparPosto() { $('form-posto').reset(); $('p-id').value = ''; $('p-raio').value = 150; $('p-salvar').textContent = 'Adicionar'; }
+function limparPosto() { $('form-posto').reset(); $('p-id').value = ''; $('p-raio').value = 150; $('p-salvar').textContent = 'Adicionar'; limparMapa(); }
 function usarMinhaLocalizacao() {
   msg('posto-msg', 'Pegando localização…', true);
   navigator.geolocation.getCurrentPosition(
-    p => { $('p-coord').value = `${p.coords.latitude.toFixed(6)}, ${p.coords.longitude.toFixed(6)}`; msg('posto-msg', `Localização capturada (precisão ±${Math.round(p.coords.accuracy)} m).`, true); },
+    p => { marcarLocal(p.coords.latitude, p.coords.longitude, 18); msg('posto-msg', `Localização capturada (precisão ±${Math.round(p.coords.accuracy)} m). Confira no mapa.`, true); },
     () => msg('posto-msg', 'Não foi possível pegar a localização. Permita o acesso no navegador.'),
     { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
 }
 async function salvarPosto(e) {
   e.preventDefault(); msg('posto-msg');
   const m = $('p-coord').value.replace(/\s/g, '').match(/^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
-  if (!m) return msg('posto-msg', 'Coordenadas no formato: -30.1234, -51.2345');
+  if (!m) return msg('posto-msg', 'Marque o local do posto: digite o endereço e clique em Localizar, ou clique no mapa.');
   const reg = { nome: $('p-nome').value.trim(), endereco: $('p-end').value.trim() || null, lat: +m[1], lng: +m[2], raio_m: +$('p-raio').value, ativo: $('p-ativo').value === 'true' };
   if (Math.abs(reg.lat) > 90 || Math.abs(reg.lng) > 180) return msg('posto-msg', 'Coordenadas inválidas.');
   const id = $('p-id').value;

@@ -39,7 +39,7 @@ App de ponto da AVP Terceirização. O colaborador bate o ponto pelo celular com
 ## 3. Primeiro uso
 
 1. Abra o **painel > Postos e raio GPS** e cadastre cada posto:
-   - Coordenadas: no Google Maps, segure o dedo em cima do prédio e copie os números. Ou vá até o posto e toque em "Usar minha localização".
+   - Local: digite o endereço e clique em **Localizar**, escolha o resultado e confira no mapa. Se o pino não estiver no prédio certo, clique no lugar exato do mapa ou arraste o pino. Também dá para estar no posto e tocar em "Usar minha localização".
    - Raio: **150 m** é um bom começo. Em prédio alto ou área com sinal ruim, use 200 a 300 m.
 2. Abra **Colaboradores > Importar planilha** e use o `modelo_colaboradores.xlsx`. O nome do posto na planilha precisa ser igual ao nome cadastrado.
 3. Mande o link para os colaboradores. No celular, cada um:

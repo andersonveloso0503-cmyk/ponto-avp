@@ -82,6 +82,14 @@ nav.abas button.on{color:var(--azul)}
 .btn-qr:disabled{border-color:#C9D2DE;color:#8C9AB0;cursor:not-allowed}
 .mira{position:absolute;left:50%;top:50%;width:64%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.9);border-radius:20px;box-shadow:0 0 0 2000px rgba(15,27,45,.45);pointer-events:none}
 .alerta-ic{width:72px;height:72px;border-radius:50%;background:var(--alerta-bg);display:flex;align-items:center;justify-content:center;margin:0 auto}
+.instalar-card{display:flex;gap:12px;align-items:center;background:#1E3A8A;border:1px solid #3B5BB5;border-radius:16px;padding:14px 16px;color:#fff;width:100%;text-align:left;font-size:14px;line-height:1.4}
+.instalar-card b{font-size:15px;display:block}
+.instalar-faixa{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:16px 24px 0;background:#EAF1FF;color:#1E3A8A;border-radius:14px;padding:12px 14px;font-size:14px;font-weight:600}
+.instalar-faixa button{border:0;background:var(--azul);color:#fff;border-radius:10px;padding:10px 14px;font-weight:700;font-size:14px;white-space:nowrap}
+.passo{display:flex;gap:14px;align-items:flex-start;background:#fff;border-radius:16px;padding:16px}
+.passo .n{flex-shrink:0;width:34px;height:34px;border-radius:50%;background:var(--azul);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:16px}
+.passo p{margin:0;font-size:16px;line-height:1.45}
+.passo .ic{display:inline-flex;vertical-align:middle;background:#E6EAF0;border-radius:8px;padding:3px 6px;margin:0 2px}
 .check{width:72px;height:72px;border-radius:50%;background:var(--ok-bg);display:flex;align-items:center;justify-content:center;margin:0 auto}
 </style>
 </head>
@@ -94,7 +102,11 @@ nav.abas button.on{color:var(--azul)}
     <h1 style="margin:0;font-size:32px;font-weight:800;letter-spacing:-.5px">Ponto AVP</h1>
     <p style="margin:0;font-size:15px;color:#B8C4D6;line-height:1.5">AVP Terceirização · registro de jornada</p>
   </div>
-  <form id="form-login" style="margin-top:44px;display:flex;flex-direction:column;gap:18px">
+  <button type="button" id="login-instalar" class="instalar-card" style="margin-top:28px;display:none" onclick="abrirInstalar()">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#8DB4FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 7v7M9 11l3 3 3-3M10 18h4"/></svg>
+    <span><b>Instale o app no seu celular</b>Toque aqui e veja o passo a passo. Leva 1 minuto.</span>
+  </button>
+  <form id="form-login" style="margin-top:28px;display:flex;flex-direction:column;gap:18px">
     <div class="campo"><label for="login-cpf">CPF</label><input id="login-cpf" inputmode="numeric" autocomplete="username" placeholder="000.000.000-00" required></div>
     <div class="campo"><label for="login-senha">Senha</label><input id="login-senha" type="password" autocomplete="current-password" required></div>
     <div id="login-erro" class="erro" role="alert"></div>
@@ -121,6 +133,24 @@ nav.abas button.on{color:var(--azul)}
   </form>
 </section>
 
+<!-- ============ COMO INSTALAR ============ -->
+<section id="tela-instalar" class="tela">
+  <div class="conteudo" style="padding-top:calc(env(safe-area-inset-top) + 20px)">
+    <button class="icon-btn" aria-label="Voltar" onclick="voltarDeInstalar()" style="margin-left:-12px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <div style="display:flex;gap:14px;align-items:center">
+      <img src="icone-192.png" alt="" style="width:64px;height:64px;border-radius:16px;box-shadow:0 2px 8px rgba(15,27,45,.15)">
+      <div><h1 style="margin:0;font-size:24px;font-weight:800">Instalar o Ponto AVP</h1><p id="i-aparelho" style="margin:4px 0 0;color:var(--cinza);font-size:14px"></p></div>
+    </div>
+    <div id="i-passos" style="display:flex;flex-direction:column;gap:10px"></div>
+    <div class="cartao" style="padding:14px 16px;font-size:14px;line-height:1.5;color:#2B3A50">
+      Depois de instalado, procure o ícone <b>Ponto AVP</b> na tela do celular e abra sempre por ele. Na primeira vez, toque em <b>Permitir</b> quando o celular pedir <b>localização</b> e <b>câmera</b>.
+    </div>
+    <button class="btn-sec" onclick="voltarDeInstalar()">Voltar</button>
+  </div>
+</section>
+
 <!-- ============ BATER PONTO ============ -->
 <section id="tela-home" class="tela">
   <div class="topo">
@@ -133,6 +163,7 @@ nav.abas button.on{color:var(--azul)}
     <p id="h-nome" style="margin:0;font-size:22px;font-weight:800"></p>
     <p id="h-posto" style="margin:0;font-size:14px;color:#B8C4D6"></p>
   </div>
+  <div id="h-instalar" class="instalar-faixa" style="display:none"><span>Instale o app para abrir mais rápido</span><button onclick="abrirInstalar()">Como instalar</button></div>
   <div style="padding:24px 24px 0;display:flex;flex-direction:column;align-items:center;gap:6px">
     <p id="h-data" style="margin:0;font-size:14px;color:var(--cinza);font-weight:600"></p>
     <p id="h-hora" style="margin:0;font-size:60px;font-weight:800;letter-spacing:-2px;font-variant-numeric:tabular-nums">--:--</p>
@@ -335,6 +366,7 @@ async function carregarHome() {
   else if (!data.posto) erro('h-erro', 'Você ainda não foi ligado a um posto. Fale com o RH.');
   desenharBotoes();
   desenharRonda();
+  mostrarAvisoInstalar();
   iniciarGps();
   if (rondaPendente) { const cod = rondaPendente; rondaPendente = null; try { sessionStorage.removeItem('ronda_pendente'); } catch (e) {} registrarRonda(cod); }
 }
@@ -603,6 +635,102 @@ async function carregarEspelho() {
       <div class="marcas">${j.marcas.map(m => `<span><span style="color:#4A5A70">${NOMES[m.tipo]}:</span> <b>${hora(m.registrado_em)}</b></span>`).join('')}</div></div>`;
   }).join('') : '<p style="color:#4A5A70">Nenhum registro neste mês.</p>';
 }
+
+// ---------- instalação ----------
+let pedidoInstalar = null, telaAntesInstalar = 'tela-login';
+const ua = navigator.userAgent;
+const ehIOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+const ehAndroid = /Android/i.test(ua);
+const ehSamsung = /SamsungBrowser/i.test(ua);
+const ehSafariIOS = ehIOS && /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA|FBAN|FBAV|Instagram|WhatsApp/i.test(ua);
+const ehAppInterno = /FBAN|FBAV|Instagram|WhatsApp|Line\//i.test(ua) || (ehIOS && !/Safari/i.test(ua));
+const instalado = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedidoInstalar = e; mostrarAvisoInstalar(); if ($('tela-instalar').classList.contains('ativa')) desenharInstalar(); });
+window.addEventListener('appinstalled', () => { pedidoInstalar = null; mostrarAvisoInstalar(); });
+
+function mostrarAvisoInstalar() {
+  const mostrar = !instalado() && (ehIOS || ehAndroid || pedidoInstalar);
+  $('login-instalar').style.display = mostrar ? 'flex' : 'none';
+  $('h-instalar').style.display = mostrar ? 'flex' : 'none';
+}
+function abrirInstalar() {
+  const atual = document.querySelector('.tela.ativa');
+  telaAntesInstalar = atual ? atual.id : 'tela-login';
+  desenharInstalar(); mostrar('tela-instalar');
+}
+function voltarDeInstalar() { telaAntesInstalar === 'tela-home' ? carregarHome() : mostrar(telaAntesInstalar); }
+async function instalarAgora() {
+  if (!pedidoInstalar) return;
+  pedidoInstalar.prompt();
+  const r = await pedidoInstalar.userChoice.catch(() => ({}));
+  pedidoInstalar = null;
+  if (r.outcome === 'accepted') { $('i-passos').innerHTML = passos([['Pronto! O ícone <b>Ponto AVP</b> foi colocado na tela do seu celular. Feche esta página e abra pelo ícone.']]); }
+  else desenharInstalar();
+}
+function copiarLink() {
+  const url = location.origin + location.pathname;
+  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(
+    () => { $('i-copiado').textContent = 'Link copiado! Agora abra o Safari e cole na barra de endereço.'; },
+    () => { $('i-copiado').textContent = 'Copie este link: ' + url; });
+}
+const ICON_COMPARTILHAR = '<span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="ícone compartilhar"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></span>';
+const ICON_TRES_PONTOS = '<span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="#2B3A50" aria-label="três pontinhos"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></span>';
+const ICON_MENU = '<span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B3A50" stroke-width="2.4" stroke-linecap="round" aria-label="menu"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span>';
+const passos = lista => lista.map((p, i) => `<div class="passo"><span class="n">${lista.length > 1 ? i + 1 : '✓'}</span><p>${p[0]}</p></div>`).join('');
+
+function desenharInstalar() {
+  let aparelho, html;
+  if (instalado()) {
+    aparelho = 'Já está instalado';
+    html = passos([['O app já está instalado neste celular. Abra sempre pelo ícone <b>Ponto AVP</b>.']]);
+  } else if (pedidoInstalar) {
+    aparelho = ehAndroid ? 'Android' : 'Seu aparelho';
+    html = `<button class="btn" style="height:64px;font-size:19px" onclick="instalarAgora()">Instalar agora</button>` +
+      passos([['Toque no botão azul <b>Instalar agora</b>.'], ['Na janela que abrir, toque em <b>Instalar</b>.'], ['Pronto: o ícone <b>Ponto AVP</b> aparece na tela do celular.']]);
+  } else if (ehIOS && !ehSafariIOS) {
+    aparelho = 'iPhone · precisa abrir no Safari';
+    html = passos([
+      ['No iPhone, só dá para instalar pelo <b>Safari</b> (o navegador da bússola azul). Você abriu por outro aplicativo.'],
+      ['Toque no botão abaixo para <b>copiar o link</b>.'],
+      ['Abra o <b>Safari</b>, toque na barra de endereço, cole o link e abra.'],
+      ['Depois, volte nesta tela pelo Safari e siga os passos de instalação.']]) +
+      `<button class="btn" onclick="copiarLink()">Copiar link do app</button><p id="i-copiado" style="margin:0;text-align:center;font-size:14px;color:#0B5D3B;font-weight:600"></p>`;
+  } else if (ehIOS) {
+    aparelho = 'iPhone · Safari';
+    html = passos([
+      [`Toque no botão <b>Compartilhar</b> ${ICON_COMPARTILHAR} (fica na barra de baixo ou de cima do Safari).`],
+      ['Role a lista para baixo e toque em <b>Adicionar à Tela de Início</b>.'],
+      ['Toque em <b>Adicionar</b>, no canto de cima.'],
+      ['Pronto: o ícone <b>Ponto AVP</b> aparece na tela do iPhone.']]);
+  } else if (ehAndroid && ehAppInterno) {
+    aparelho = 'Android · abra no Chrome';
+    html = passos([
+      [`Você abriu dentro de outro aplicativo (como WhatsApp ou Instagram). Toque nos ${ICON_TRES_PONTOS} no canto de cima.`],
+      ['Toque em <b>Abrir no Chrome</b> (ou "Abrir no navegador").'],
+      ['No Chrome, toque de novo em <b>Instale o app no seu celular</b> e siga os passos.']]);
+  } else if (ehSamsung) {
+    aparelho = 'Android · Samsung Internet';
+    html = passos([
+      [`Toque no menu ${ICON_MENU} na barra de baixo.`],
+      ['Toque em <b>Adicionar página a</b>.'],
+      ['Escolha <b>Tela inicial</b> e confirme em <b>Adicionar</b>.'],
+      ['Pronto: o ícone <b>Ponto AVP</b> aparece na tela do celular.']]);
+  } else if (ehAndroid) {
+    aparelho = 'Android · Chrome';
+    html = passos([
+      [`Toque nos ${ICON_TRES_PONTOS} no canto de cima do Chrome.`],
+      ['Toque em <b>Instalar app</b> (em alguns celulares aparece <b>Adicionar à tela inicial</b>).'],
+      ['Confirme em <b>Instalar</b> ou <b>Adicionar</b>.'],
+      ['Pronto: o ícone <b>Ponto AVP</b> aparece na tela do celular.']]);
+  } else {
+    aparelho = 'Computador';
+    html = passos([['Este app foi feito para o <b>celular</b>. Abra este mesmo link no celular para instalar.']]);
+  }
+  $('i-aparelho').textContent = aparelho;
+  $('i-passos').innerHTML = html;
+}
+mostrarAvisoInstalar();
 
 // ---------- início ----------
 (async () => {

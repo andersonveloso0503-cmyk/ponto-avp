@@ -45,7 +45,7 @@ App de ponto da AVP Terceirização. O colaborador bate o ponto pelo celular com
 3. Mande o link para os colaboradores. No celular, cada um:
    - toca em **"Criar senha com CPF e nome"** (o nome completo precisa ser igual ao cadastro, mas acento e maiúscula não importam);
    - permite **localização** e **câmera**;
-   - no menu do navegador, toca em **"Adicionar à tela inicial"**, e o app fica com ícone, como um aplicativo.
+   - toca em **"Instale o app no seu celular"**, na tela de entrada. O app mostra o passo a passo certo para o celular dele (Android, iPhone ou Samsung). No Android com Chrome aparece um botão **Instalar agora**.
 
 ## Funcionários por posto
 

@@ -101,8 +101,8 @@ td .peq{font-size:12px;color:var(--cinza)}
     <img src="logo.png" alt="Logo LCS Terceirização" style="width:96px;height:auto;align-self:center">
     <h1 style="font-size:24px">Ponto AVP · Painel</h1>
     <p class="sub" style="margin:0">Acesso do empregador</p>
-    <label>E-mail<input id="l-email" type="email" autocomplete="username" required></label>
-    <label>Senha<input id="l-senha" type="password" autocomplete="current-password" required></label>
+    <label for="l-email">E-mail</label><input id="l-email" name="email" type="email" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required style="font-size:16px;margin-top:-8px">
+    <label for="l-senha">Senha</label><input id="l-senha" name="senha" type="password" autocomplete="current-password" required style="font-size:16px;margin-top:-8px">
     <div id="l-erro" class="erro" role="alert"></div>
     <button class="btn" type="submit" style="height:48px">Entrar</button>
   </form>
@@ -115,6 +115,7 @@ td .peq{font-size:12px;color:var(--cinza)}
     <button data-sec="espelho">Espelho de ponto</button>
     <button data-sec="colab">Colaboradores</button>
     <button data-sec="postos">Postos e raio GPS</button>
+    <button data-sec="qr">QR Codes da ronda</button>
     <button data-sec="rondas">Rondas</button>
     <button data-sec="bloq">Tentativas bloqueadas</button>
     <button class="sair" onclick="sair()">Sair</button>
@@ -187,7 +188,7 @@ td .peq{font-size:12px;color:var(--cinza)}
       </form>
       <div id="colab-msg" class="erro" role="status"></div>
       <div class="caixa"><table>
-        <thead><tr><th>Nome</th><th>CPF</th><th>Função</th><th>Posto</th><th>App</th><th>Situação</th><th></th></tr></thead>
+        <thead><tr><th>Nome</th><th>CPF</th><th>Função</th><th>Posto</th><th>App</th><th>Situação</th></tr></thead>
         <tbody id="colab-corpo"></tbody>
       </table></div>
     </section>
@@ -215,13 +216,20 @@ td .peq{font-size:12px;color:var(--cinza)}
       </form>
       <div id="posto-msg" class="erro" role="status"></div>
       <div class="caixa"><table>
-        <thead><tr><th>Posto</th><th>Endereço</th><th>Coordenadas</th><th>Raio</th><th>Colaboradores</th><th>Ronda</th><th>Situação</th><th></th></tr></thead>
+        <thead><tr><th>Posto</th><th>Endereço</th><th>Coordenadas</th><th>Raio</th><th>Colaboradores</th><th>Ronda</th><th>Situação</th></tr></thead>
         <tbody id="postos-corpo"></tbody>
       </table></div>
+    </section>
+
+    <!-- QR CODES DA RONDA -->
+    <section id="sec-qr" class="secao">
+      <div class="cab"><div><h1>QR Codes da ronda</h1><p class="sub">Escolha o posto, cadastre os pontos da ronda e imprima os QR Codes para colar em cada local.</p></div></div>
+      <div class="form"><label>Posto<select id="qr-posto" onchange="this.value ? abrirRondaBox(+this.value) : fecharRondaBox()"><option value="">— escolha o posto —</option></select></label></div>
+      <p id="qr-vazio" class="aviso" style="margin:0">Escolha um posto acima. Se a lista estiver vazia, cadastre o posto primeiro em "Postos e raio GPS".</p>
       <div id="ronda-box" class="ronda-box">
         <div class="cab">
           <div><h1 style="font-size:22px">Pontos de ronda · <span id="rb-posto"></span></h1><p class="sub">Cada ponto vira um QR Code. Imprima e cole no local (garagem, portão, salão…).</p></div>
-          <div class="acoes"><button class="btn" onclick="imprimirQRs()">Imprimir QR Codes</button><button class="btn sec" onclick="fecharRondaBox()">Fechar</button></div>
+          <div class="acoes"><button class="btn" onclick="imprimirQRs()">Imprimir QR Codes</button></div>
         </div>
         <form class="form" style="padding:0" onsubmit="addPontoRonda(event)">
           <label>Nome do ponto<input id="rb-nome" required placeholder="Ex.: Garagem subsolo"></label>
@@ -229,8 +237,8 @@ td .peq{font-size:12px;color:var(--cinza)}
           <button class="btn" type="submit">Adicionar ponto</button>
         </form>
         <div id="rb-msg" class="erro" role="status"></div>
-        <div class="caixa" style="border:1px solid var(--borda)"><table style="min-width:560px">
-          <thead><tr><th>QR</th><th>Ordem</th><th>Ponto</th><th>Situação</th><th></th></tr></thead>
+        <div class="caixa" style="border:1px solid var(--borda)"><table style="min-width:0">
+          <thead><tr><th>QR</th><th>Ponto da ronda</th></tr></thead>
           <tbody id="rb-corpo"></tbody>
         </table></div>
       </div>
@@ -344,6 +352,7 @@ async function carregarBase() {
   $('hoje-posto').innerHTML = '<option value="">Todos os postos</option>' + opcPostos;
   $('esp-posto').innerHTML = '<option value="">Todos</option>' + opcPostos;
   $('ro-posto').innerHTML = '<option value="">Todos</option>' + opcPostos;
+  { const v = $('qr-posto').value; $('qr-posto').innerHTML = '<option value="">— escolha o posto —</option>' + opcPostos; $('qr-posto').value = v; }
   { const v = $('colab-posto').value; $('colab-posto').innerHTML = '<option value="">Todos os postos</option><option value="sem">Sem posto</option>' + opcPostos; $('colab-posto').value = v; }
   $('c-posto').innerHTML = '<option value="">— sem posto —</option>' + postos.filter(x => x.ativo).map(x => `<option value="${x.id}">${esc(x.nome)}</option>`).join('');
   $('esp-colab').innerHTML = '<option value="">Todos</option>' + colabs.map(x => `<option value="${x.id}">${esc(x.nome)}</option>`).join('');
@@ -538,15 +547,16 @@ function desenharColab() {
   let grupoAtual = null;
   $('colab-corpo').innerHTML = lista.length ? lista.map(c => {
     const g = c.posto_id ? nomePosto(c.posto_id) : 'Sem posto';
-    const cab = g !== grupoAtual ? `<tr class="grupo"><td colspan="7">${esc(g)} · ${lista.filter(x => (x.posto_id ? nomePosto(x.posto_id) : 'Sem posto') === g).length}</td></tr>` : '';
+    const cab = g !== grupoAtual ? `<tr class="grupo"><td colspan="6">${esc(g)} · ${lista.filter(x => (x.posto_id ? nomePosto(x.posto_id) : 'Sem posto') === g).length}</td></tr>` : '';
     grupoAtual = g;
     return cab + `<tr>
-    <td><b>${esc(c.nome)}</b></td><td>${fmtCpf(c.cpf)}</td><td>${esc(c.funcao || '')}</td><td>${esc(nomePosto(c.posto_id))}</td>
+    <td style="min-width:200px"><b>${esc(c.nome)}</b>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn sec peq" onclick="editarColab(${c.id})">Editar</button>${c.user_id ? `<button class="btn sec peq" onclick="resetarAcesso(${c.id})">Esqueceu a senha</button>` : ''}</div></td>
+    <td>${fmtCpf(c.cpf)}</td><td>${esc(c.funcao || '')}</td><td>${esc(nomePosto(c.posto_id))}</td>
     <td>${c.user_id ? '<span class="tag ok">Com senha</span>' : '<span class="tag ne">Não acessou</span>'}</td>
     <td>${c.ativo ? '<span class="tag ok">Ativo</span>' : '<span class="tag al">Inativo</span>'}</td>
-    <td style="white-space:nowrap"><button class="btn sec peq" onclick="editarColab(${c.id})">Editar</button>
-      ${c.user_id ? `<button class="btn sec peq" onclick="resetarAcesso(${c.id})">Esqueceu a senha</button>` : ''}</td></tr>`; }).join('')
-    : '<tr><td colspan="7" class="vazio">Nenhum colaborador.</td></tr>';
+    </tr>`; }).join('')
+    : '<tr><td colspan="6" class="vazio">Nenhum colaborador.</td></tr>';
 }
 function editarColab(id) {
   const c = colabPorId(id);
@@ -651,19 +661,21 @@ function escolherResultado(i) {
 // ---------- POSTOS ----------
 function desenharPostos() {
   $('postos-corpo').innerHTML = postos.length ? postos.map(p => `<tr>
-    <td><b>${esc(p.nome)}</b></td><td>${esc(p.endereco || '')}</td>
+    <td style="min-width:190px"><b>${esc(p.nome)}</b>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn peq" onclick="abrirRondaBox(${p.id})">QR da ronda</button><button class="btn sec peq" onclick="editarPosto(${p.id})">Editar</button></div></td>
+    <td>${esc(p.endereco || '')}</td>
     <td><a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" rel="noopener">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</a></td>
     <td>${p.raio_m} m</td><td>${colabs.filter(c => c.posto_id === p.id && c.ativo).length}</td>
     <td>${pontosRonda.filter(r => r.posto_id === p.id && r.ativo).length} pontos</td>
     <td>${p.ativo ? '<span class="tag ok">Ativo</span>' : '<span class="tag al">Inativo</span>'}</td>
-    <td style="white-space:nowrap"><button class="btn sec peq" onclick="editarPosto(${p.id})">Editar</button> <button class="btn sec peq" onclick="abrirRondaBox(${p.id})">QR da ronda</button></td></tr>`).join('')
-    : '<tr><td colspan="8" class="vazio">Nenhum posto cadastrado ainda. Cadastre o primeiro acima.</td></tr>';
+    </tr>`).join('')
+    : '<tr><td colspan="7" class="vazio">Nenhum posto cadastrado ainda. Cadastre o primeiro acima.</td></tr>';
 }
 function editarPosto(id) {
   const p = postos.find(x => x.id === id);
   $('p-id').value = p.id; $('p-nome').value = p.nome; $('p-end').value = p.endereco || ''; $('p-coord').value = `${p.lat}, ${p.lng}`;
   $('p-raio').value = p.raio_m; $('p-ativo').value = String(p.ativo); $('p-salvar').textContent = 'Salvar alterações';
-  iniciarMapa(); marcarLocal(p.lat, p.lng, 18);
+  irPara('postos'); iniciarMapa(); marcarLocal(p.lat, p.lng, 18); $('form-posto').scrollIntoView({ behavior: 'smooth' });
   $('form-posto').scrollIntoView({ behavior: 'smooth' });
 }
 function limparPosto() { $('form-posto').reset(); $('p-id').value = ''; $('p-raio').value = 150; $('p-salvar').textContent = 'Adicionar'; limparMapa(); }
@@ -692,21 +704,26 @@ function qrSvg(codigo, cel) {
   const q = qrcode(0, 'M'); q.addData(urlApp() + '?ronda=' + encodeURIComponent(codigo)); q.make();
   return q.createSvgTag({ cellSize: cel || 4, margin: 2, scalable: true });
 }
-function abrirRondaBox(postoId) {
-  rondaPostoId = postoId; $('rb-posto').textContent = nomePosto(postoId);
-  msg('rb-msg'); desenharRondaBox(); $('ronda-box').classList.add('on');
-  $('ronda-box').scrollIntoView({ behavior: 'smooth' });
+function irPara(sec) {
+  document.querySelectorAll('aside button[data-sec]').forEach(x => x.classList.toggle('on', x.dataset.sec === sec));
+  document.querySelectorAll('.secao').forEach(x => x.classList.toggle('on', x.id === 'sec-' + sec));
+  window.scrollTo(0, 0);
 }
-function fecharRondaBox() { $('ronda-box').classList.remove('on'); rondaPostoId = null; }
+function abrirRondaBox(postoId) {
+  irPara('qr');
+  rondaPostoId = postoId; $('qr-posto').value = String(postoId); $('rb-posto').textContent = nomePosto(postoId);
+  msg('rb-msg'); desenharRondaBox(); $('ronda-box').classList.add('on'); $('qr-vazio').style.display = 'none';
+}
+function fecharRondaBox() { $('ronda-box').classList.remove('on'); rondaPostoId = null; $('qr-vazio').style.display = 'block'; }
 function desenharRondaBox() {
   const lista = pontosRonda.filter(r => r.posto_id === rondaPostoId);
   $('rb-ordem').value = lista.length + 1;
   $('rb-corpo').innerHTML = lista.length ? lista.map(r => `<tr>
-    <td><span class="qr-mini">${qrSvg(r.codigo, 2)}</span></td><td>${r.ordem}</td><td><b>${esc(r.nome)}</b></td>
-    <td>${r.ativo ? '<span class="tag ok">Ativo</span>' : '<span class="tag al">Desativado</span>'}</td>
-    <td style="white-space:nowrap"><button class="btn sec peq" onclick="renomearPonto(${r.id})">Renomear</button>
-      <button class="btn sec peq" onclick="alternarPonto(${r.id})">${r.ativo ? 'Desativar' : 'Ativar'}</button></td></tr>`).join('')
-    : '<tr><td colspan="5" class="vazio">Nenhum ponto de ronda neste posto ainda.</td></tr>';
+    <td><span class="qr-mini">${qrSvg(r.codigo, 2)}</span></td>
+    <td style="min-width:180px"><b>${r.ordem}. ${esc(r.nome)}</b> ${r.ativo ? '' : '<span class="tag al">Desativado</span>'}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn sec peq" onclick="renomearPonto(${r.id})">Renomear</button>
+      <button class="btn sec peq" onclick="alternarPonto(${r.id})">${r.ativo ? 'Desativar' : 'Ativar'}</button></div></td></tr>`).join('')
+    : '<tr><td colspan="2" class="vazio">Nenhum ponto de ronda neste posto ainda.</td></tr>';
 }
 async function addPontoRonda(e) {
   e.preventDefault(); msg('rb-msg');

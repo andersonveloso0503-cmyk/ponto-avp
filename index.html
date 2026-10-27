@@ -398,6 +398,7 @@ function iniciarRelogio() {
 
 function situacaoGps() {
   if (!status || !status.posto) return { ok: false, txt: 'Sem posto' };
+  if (status.posto.lat == null) return { ok: false, txt: 'Local do posto ainda não cadastrado. Fale com o RH.' };
   if (!posAtual) return { ok: false, txt: 'Buscando localização…', esperando: true };
   const d = distancia(posAtual.lat, posAtual.lng, status.posto.lat, status.posto.lng);
   if (posAtual.precisao > PRECISAO_MAX) return { ok: false, d, txt: `GPS fraco (±${Math.round(posAtual.precisao)} m) — vá para área aberta` };

@@ -34,6 +34,11 @@ create table if not exists public.colaboradores (
   criado_em   timestamptz not null default now()
 );
 
+-- postos podem ser criados sem local (vindos da planilha); o ponto fica bloqueado até marcar no mapa
+alter table public.postos alter column lat drop not null;
+alter table public.postos alter column lng drop not null;
+alter table public.colaboradores add column if not exists empresa text;
+
 create table if not exists public.admins (
   user_id     uuid primary key references auth.users(id) on delete cascade,
   nome        text
@@ -199,6 +204,10 @@ begin
     return json_build_object('ok', false, 'motivo', 'Você não está ligado a um posto. Fale com o RH.');
   end if;
 
+  if p.lat is null or p.lng is null then
+    return json_build_object('ok', false, 'motivo', format('O local do posto %s ainda não foi marcado no mapa. Fale com o RH.', p.nome));
+  end if;
+
   if p_lat is null or p_lng is null then
     return json_build_object('ok', false, 'motivo', 'Localização não recebida. Ligue o GPS e permita a localização.');
   end if;
@@ -361,12 +370,14 @@ begin
   end if;
   select * into p from public.postos where id = pr.posto_id;
 
-  if p_lat is not null and p_lng is not null then
+  if p_lat is not null and p_lng is not null and p.lat is not null then
     v_dist := public.distancia_m(p_lat, p_lng, p.lat, p.lng);
   end if;
 
   if pr.posto_id is distinct from c.posto_id then
     v_motivo := format('Este QR Code é do posto %s, e você está alocado em outro posto.', p.nome);
+  elsif p.lat is null or p.lng is null then
+    v_motivo := format('O local do posto %s ainda não foi marcado no mapa. Fale com o RH.', p.nome);
   elsif v_dist is null then
     v_motivo := 'Localização não recebida. Ligue o GPS e permita a localização.';
   elsif p_precisao is not null and p_precisao > 200 then

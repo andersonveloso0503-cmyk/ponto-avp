@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="config.js"></script>
+<script src="importador.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
@@ -75,6 +76,17 @@ td .peq{font-size:12px;color:var(--cinza)}
 .busca-res button{text-align:left;border:1px solid #C9D2DE;background:#fff;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.4;color:var(--texto)}
 .busca-res button:hover{border-color:var(--azul);background:#EAF1FF}
 .span-todo{grid-column:1/-1}
+.imp{position:fixed;inset:0;background:rgba(15,27,45,.7);display:none;align-items:flex-start;justify-content:center;padding:16px;z-index:45;overflow:auto}
+.imp.on{display:flex}
+.imp .box{background:#fff;border-radius:18px;padding:20px;max-width:1000px;width:100%;display:flex;flex-direction:column;gap:14px;margin:auto 0}
+.imp-mapa{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.imp-mapa label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--cinza)}
+.imp-mapa select{width:100%}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700}
+.imp table{min-width:640px}
+.imp td{font-size:13px;padding:8px 10px}
+.sem-local{display:inline-block;margin-top:4px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:800;background:var(--al-bg);color:var(--al)}
 .grupo td{background:#F3F5F8;font-weight:800;font-size:13px;color:var(--cinza);text-transform:uppercase;letter-spacing:.5px}
 .ronda-box{background:#fff;border-radius:16px;padding:20px;display:none;flex-direction:column;gap:14px;border:2px solid #C9D7F5}
 .ronda-box.on{display:flex}
@@ -176,19 +188,20 @@ td .peq{font-size:12px;color:var(--cinza)}
           <label class="btn sec" style="display:inline-flex;align-items:center;cursor:pointer">Importar planilha<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importarColab(this)"></label>
         </div>
       </div>
-      <div class="aviso">Planilha para importar: colunas <b>cpf</b>, <b>nome</b>, <b>funcao</b>, <b>posto</b> (nome do posto igual ao cadastrado). CPF já existente é atualizado.</div>
+      <div class="aviso"><b>Importar planilha:</b> pode mandar do jeito que estiver, com as colunas em qualquer ordem e com outros títulos. O painel acha sozinho o nome, CPF, função, posto e empresa, confere os CPFs e mostra uma prévia antes de gravar. Quem já está cadastrado (mesmo CPF) é atualizado.</div>
       <form id="form-colab" class="form" onsubmit="salvarColab(event)">
         <input type="hidden" id="c-id">
         <label>CPF<input id="c-cpf" inputmode="numeric" required></label>
         <label>Nome completo<input id="c-nome" required></label>
         <label>Função<input id="c-funcao" placeholder="Porteiro, ASG, Zelador…"></label>
+        <label>Empresa<input id="c-empresa" placeholder="AVP, TRI…"></label>
         <label>Posto<select id="c-posto"><option value="">— sem posto —</option></select></label>
         <label>Situação<select id="c-ativo"><option value="true">Ativo</option><option value="false">Inativo (bloqueado)</option></select></label>
         <div class="acoes"><button class="btn" type="submit" id="c-salvar">Adicionar</button><button class="btn sec" type="button" onclick="limparColab()">Limpar</button></div>
       </form>
       <div id="colab-msg" class="erro" role="status"></div>
       <div class="caixa"><table>
-        <thead><tr><th>Nome</th><th>CPF</th><th>Função</th><th>Posto</th><th>App</th><th>Situação</th></tr></thead>
+        <thead><tr><th>Nome</th><th>CPF</th><th>Função / empresa</th><th>Posto</th><th>App</th><th>Situação</th></tr></thead>
         <tbody id="colab-corpo"></tbody>
       </table></div>
     </section>
@@ -215,6 +228,7 @@ td .peq{font-size:12px;color:var(--cinza)}
         </div>
       </form>
       <div id="posto-msg" class="erro" role="status"></div>
+      <div id="postos-semlocal" class="aviso" style="display:none;background:var(--al-bg);color:var(--al)"></div>
       <div class="caixa"><table>
         <thead><tr><th>Posto</th><th>Endereço</th><th>Coordenadas</th><th>Raio</th><th>Colaboradores</th><th>Ronda</th><th>Situação</th></tr></thead>
         <tbody id="postos-corpo"></tbody>
@@ -285,6 +299,30 @@ td .peq{font-size:12px;color:var(--cinza)}
     <img id="m-foto" alt="Selfie do registro">
     <div id="m-info"></div>
     <a id="m-mapa" class="btn sec" style="display:flex;align-items:center;justify-content:center;text-decoration:none" target="_blank" rel="noopener">Ver local no mapa</a>
+  </div>
+</div>
+
+<div id="imp" class="imp" onclick="if(event.target===this)fecharImportacao()">
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="imp-titulo">
+    <div class="cab" style="align-items:center">
+      <div><h1 id="imp-titulo" style="font-size:22px">Importar planilha</h1><p id="imp-arquivo" class="sub"></p></div>
+      <button class="btn sec peq" onclick="fecharImportacao()">Cancelar</button>
+    </div>
+    <div class="aviso" style="margin:0">Confira se cada coluna foi reconhecida certo. Se alguma estiver errada, troque aqui embaixo, e a prévia atualiza na hora.</div>
+    <div class="imp-mapa">
+      <label>Aba da planilha<select id="imp-aba" onchange="trocarAbaImportacao()"></select></label>
+      <label>Linha dos títulos<select id="imp-titulo-linha" onchange="trocarTituloImportacao()"></select></label>
+      <span id="imp-campos" style="display:contents"></span>
+    </div>
+    <div id="imp-chips" class="chips"></div>
+    <div id="imp-postos"></div>
+    <label id="imp-criar-wrap" style="display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45"><input type="checkbox" id="imp-criar" checked style="width:20px;height:20px;margin-top:1px;flex-shrink:0" onchange="desenharImportacao()"><span><b>Criar os postos novos automaticamente.</b> Eles entram sem local; depois é só abrir o posto em "Postos e raio GPS", digitar o endereço e clicar em Localizar. Enquanto o local não for marcado, o ponto desse posto fica bloqueado.</span></label>
+    <div class="caixa" style="border:1px solid var(--borda);max-height:46vh;overflow:auto"><table>
+      <thead><tr><th>Linha</th><th>Nome</th><th>CPF</th><th>Função</th><th>Posto</th><th>Situação</th></tr></thead>
+      <tbody id="imp-corpo"></tbody>
+    </table></div>
+    <div id="imp-msg" class="erro" role="status"></div>
+    <div class="acoes" style="justify-content:flex-end"><button class="btn sec" onclick="fecharImportacao()">Cancelar</button><button id="imp-ok" class="btn" onclick="confirmarImportacao()">Importar</button></div>
   </div>
 </div>
 
@@ -552,7 +590,7 @@ function desenharColab() {
     return cab + `<tr>
     <td style="min-width:200px"><b>${esc(c.nome)}</b>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn sec peq" onclick="editarColab(${c.id})">Editar</button>${c.user_id ? `<button class="btn sec peq" onclick="resetarAcesso(${c.id})">Esqueceu a senha</button>` : ''}</div></td>
-    <td>${fmtCpf(c.cpf)}</td><td>${esc(c.funcao || '')}</td><td>${esc(nomePosto(c.posto_id))}</td>
+    <td>${fmtCpf(c.cpf)}</td><td>${esc(c.funcao || '')}${c.empresa ? `<div class="peq">${esc(c.empresa)}</div>` : ''}</td><td>${esc(nomePosto(c.posto_id))}</td>
     <td>${c.user_id ? '<span class="tag ok">Com senha</span>' : '<span class="tag ne">Não acessou</span>'}</td>
     <td>${c.ativo ? '<span class="tag ok">Ativo</span>' : '<span class="tag al">Inativo</span>'}</td>
     </tr>`; }).join('')
@@ -560,7 +598,7 @@ function desenharColab() {
 }
 function editarColab(id) {
   const c = colabPorId(id);
-  $('c-id').value = c.id; $('c-cpf').value = fmtCpf(c.cpf); $('c-nome').value = c.nome; $('c-funcao').value = c.funcao || '';
+  $('c-id').value = c.id; $('c-cpf').value = fmtCpf(c.cpf); $('c-nome').value = c.nome; $('c-funcao').value = c.funcao || ''; $('c-empresa').value = c.empresa || '';
   $('c-posto').value = c.posto_id || ''; $('c-ativo').value = String(c.ativo); $('c-salvar').textContent = 'Salvar alterações';
   $('form-colab').scrollIntoView({ behavior: 'smooth' });
 }
@@ -569,7 +607,7 @@ async function salvarColab(e) {
   e.preventDefault(); msg('colab-msg');
   const cpf = soDig($('c-cpf').value);
   if (cpf.length !== 11) return msg('colab-msg', 'CPF precisa ter 11 números.');
-  const reg = { cpf, nome: $('c-nome').value.trim().toUpperCase(), funcao: $('c-funcao').value.trim() || null,
+  const reg = { cpf, nome: $('c-nome').value.trim().toUpperCase(), funcao: $('c-funcao').value.trim() || null, empresa: $('c-empresa').value.trim().toUpperCase() || null,
     posto_id: $('c-posto').value ? +$('c-posto').value : null, ativo: $('c-ativo').value === 'true' };
   const id = $('c-id').value;
   const { error } = id ? await sb.from('colaboradores').update(reg).eq('id', id) : await sb.from('colaboradores').insert(reg);
@@ -580,31 +618,117 @@ function resetarAcesso(id) {
   const c = colabPorId(id);
   alert(`Para liberar uma nova senha para ${c.nome}:\n\n1. Abra o Supabase > Authentication > Users\n2. Procure por: ${c.cpf}@${CFG.EMAIL_DOMINIO}\n3. Clique nos três pontinhos > Delete user\n\nDepois disso o colaborador faz o "Primeiro acesso" de novo no app. Os registros de ponto dele continuam guardados.`);
 }
+// ---------- IMPORTAR PLANILHA (qualquer formato) ----------
+let imp = null; // { arquivo, abas, aba, linhaTitulo, mapa, resultado }
 async function importarColab(input) {
   const f = input.files[0]; input.value = ''; if (!f) return;
   msg('colab-msg');
-  const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
-  const linhas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
-  const chave = (o, n) => { const k = Object.keys(o).find(k => k.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim() === n); return k ? String(o[k]).trim() : ''; };
-  const naoAchou = new Set(), regs = [];
-  linhas.forEach(l => {
-    const cpf = soDig(chave(l, 'cpf')).padStart(11, '0'), nome = chave(l, 'nome');
-    if (!nome || cpf === '00000000000') return;
-    const pn = chave(l, 'posto'), p = pn && postos.find(x => x.nome.toLowerCase().trim() === pn.toLowerCase());
-    if (pn && !p) naoAchou.add(pn);
-    const r = { cpf, nome: nome.toUpperCase(), funcao: chave(l, 'funcao') || null };
-    if (p) r.posto_id = p.id;
-    regs.push(r);
-  });
-  if (!regs.length) return msg('colab-msg', 'Não encontrei linhas com cpf e nome na planilha.');
-  // separa quem tem posto de quem não tem, para não apagar o posto de quem já estava cadastrado
-  for (const grupo of [regs.filter(r => 'posto_id' in r), regs.filter(r => !('posto_id' in r))]) {
-    if (!grupo.length) continue;
-    const { error } = await sb.from('colaboradores').upsert(grupo, { onConflict: 'cpf' });
-    if (error) return msg('colab-msg', 'Erro ao importar: ' + error.message);
+  let wb;
+  try { wb = XLSX.read(await f.arrayBuffer(), { type: 'array' }); }
+  catch (e) { return msg('colab-msg', 'Não consegui abrir esse arquivo. Salve como Excel (.xlsx) ou CSV e tente de novo.'); }
+  const abas = wb.SheetNames.map(n => ({ nome: n, linhas: XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: '', raw: false, blankrows: true }) }));
+  const an = Importador.analisarArquivo(abas);
+  if (!an.escolhida) return msg('colab-msg', 'Não achei nenhuma coluna de nome na planilha. Confira se a primeira linha com títulos tem algo como "Nome" ou "Funcionário".');
+  imp = { arquivo: f.name, abas: an.abas };
+  $('imp-arquivo').textContent = f.name;
+  $('imp-aba').innerHTML = an.abas.map(x => `<option value="${esc(x.aba)}">${esc(x.aba)}${x.dados ? ` (${x.dados} linhas)` : ''}</option>`).join('');
+  $('imp-aba').value = an.escolhida;
+  usarAbaImportacao(an.escolhida, true);
+  $('imp').classList.add('on');
+}
+function usarAbaImportacao(nome, auto) {
+  const ab = imp.abas.find(x => x.aba === nome);
+  imp.aba = ab;
+  imp.linhaTitulo = ab.linhaTitulo ?? 0;
+  imp.mapa = { ...(ab.mapa || {}) };
+  const opc = ab.linhas.slice(0, 25).map((r, i) => `<option value="${i}">Linha ${i + 1}: ${esc((r || []).filter(x => String(x).trim()).slice(0, 4).join(' · ').slice(0, 60) || '(vazia)')}</option>`).join('');
+  $('imp-titulo-linha').innerHTML = opc; $('imp-titulo-linha').value = String(imp.linhaTitulo);
+  desenharCamposImportacao(); desenharImportacao();
+}
+function trocarAbaImportacao() { usarAbaImportacao($('imp-aba').value); }
+function trocarTituloImportacao() {
+  imp.linhaTitulo = +$('imp-titulo-linha').value;
+  const r = Importador.analisarAba(imp.aba.linhas.slice(imp.linhaTitulo));
+  imp.mapa = r && r.linhaTitulo === 0 ? { ...r.mapa } : {};
+  desenharCamposImportacao(); desenharImportacao();
+}
+function desenharCamposImportacao() {
+  const titulos = imp.aba.linhas[imp.linhaTitulo] || [];
+  const cols = Math.max(titulos.length, ...imp.aba.linhas.slice(imp.linhaTitulo, imp.linhaTitulo + 20).map(r => (r || []).length));
+  const letra = i => { let s = ''; i++; while (i) { s = String.fromCharCode(65 + (i - 1) % 26) + s; i = Math.floor((i - 1) / 26); } return s; };
+  const opcoes = Array.from({ length: cols }, (_, i) => `<option value="${i}">${letra(i)}: ${esc(String(titulos[i] ?? '').trim() || '(sem título)')}</option>`).join('');
+  $('imp-campos').innerHTML = Importador.CAMPOS.map(c => `<label>${Importador.ROTULOS[c]}${c === 'nome' || c === 'cpf' ? ' *' : ''}
+    <select data-campo="${c}" onchange="imp.mapa['${c}'] = this.value === '' ? undefined : +this.value; desenharImportacao()"><option value="">— não usar —</option>${opcoes}</select></label>`).join('');
+  document.querySelectorAll('#imp-campos select').forEach(sel => { const v = imp.mapa[sel.dataset.campo]; sel.value = v === undefined ? '' : String(v); });
+}
+const TAG_IMP = { ok: ['ok', 'Pronto'], sem_cpf: ['al', 'Sem CPF'], cpf_invalido: ['al', 'CPF inválido'], repetido: ['ne', 'Repetido'] };
+function desenharImportacao() {
+  msg('imp-msg');
+  if (imp.mapa.nome === undefined || imp.mapa.cpf === undefined) {
+    imp.resultado = null;
+    $('imp-chips').innerHTML = ''; $('imp-postos').innerHTML = ''; $('imp-corpo').innerHTML = '<tr><td colspan="6" class="vazio">Escolha qual coluna é o <b>Nome</b> e qual é o <b>CPF</b>.</td></tr>';
+    $('imp-ok').disabled = true; return;
   }
-  await carregarBase(); desenharColab();
-  msg('colab-msg', `${regs.length} colaboradores importados/atualizados.` + (naoAchou.size ? ` Postos não encontrados (cadastre e importe de novo): ${[...naoAchou].join(', ')}.` : ''), !naoAchou.size);
+  const r = imp.resultado = Importador.montar(imp.aba.linhas, imp.linhaTitulo, imp.mapa, postos);
+  const criar = $('imp-criar').checked;
+  const semPosto = r.itens.filter(i => i.status === 'ok' && i.posto && i.posto.novo).length;
+  $('imp-chips').innerHTML = [
+    `<span class="chip" style="background:var(--ok-bg);color:var(--ok)">${r.resumo.ok} prontos para importar</span>`,
+    r.resumo.sem_cpf ? `<span class="chip" style="background:var(--al-bg);color:var(--al)">${r.resumo.sem_cpf} sem CPF (ficam de fora)</span>` : '',
+    r.resumo.cpf_invalido ? `<span class="chip" style="background:var(--al-bg);color:var(--al)">${r.resumo.cpf_invalido} com CPF inválido (ficam de fora)</span>` : '',
+    r.resumo.repetido ? `<span class="chip" style="background:var(--neutro-bg);color:var(--neutro)">${r.resumo.repetido} CPF repetido (vale a última linha)</span>` : ''].join('');
+  const existentes = [...new Set(r.itens.filter(i => i.posto && !i.posto.novo && i.postoPlanilha.trim().toLowerCase() !== i.posto.nome.trim().toLowerCase()).map(i => i.postoPlanilha + '→' + i.posto.nome))];
+  $('imp-postos').innerHTML = (r.postosNovos.length
+    ? `<p style="margin:0 0 6px;font-size:14px"><b>${r.postosNovos.length} postos novos</b> (ainda não cadastrados): ${r.postosNovos.map(p => esc(p.nome)).join(', ')}.</p>` : '')
+    + (existentes.length ? `<p style="margin:0;font-size:13px;color:var(--cinza)">Ligados a postos já cadastrados: ${existentes.map(x => esc(x.replace('→', ' → '))).join('; ')}.</p>` : '');
+  $('imp-criar-wrap').style.display = r.postosNovos.length ? 'flex' : 'none';
+  const ordem = { cpf_invalido: 0, sem_cpf: 1, repetido: 2, ok: 3 };
+  $('imp-corpo').innerHTML = r.itens.slice().sort((a, b) => ordem[a.status] - ordem[b.status] || a.linha - b.linha).map(i => {
+    const [cls, txt] = TAG_IMP[i.status];
+    const posto = !i.posto ? '<span style="color:#8C9AB0">—</span>'
+      : i.posto.novo ? `${esc(i.posto.nome)} <span class="tag ${criar ? 'ne' : 'al'}">${criar ? 'novo' : 'fica sem posto'}</span>`
+      : `${esc(i.posto.nome)}${Importador.chavePosto(i.posto.nome) !== Importador.chavePosto(i.postoPlanilha) ? `<div class="peq">na planilha: ${esc(i.postoPlanilha)}</div>` : ''}`;
+    const extra = i.status === 'repetido' ? `<div class="peq">mesmo CPF da linha ${i.repetidoCom.linha} (${esc(i.repetidoCom.postoPlanilha || i.repetidoCom.nome)})</div>` : '';
+    return `<tr><td>${i.linha}</td><td><b>${esc(i.nome)}</b>${i.empresa ? `<div class="peq">${esc(i.empresa)}</div>` : ''}</td><td>${esc(i.cpfBruto || '—')}</td><td>${esc(i.funcao || '')}</td><td>${posto}</td><td><span class="tag ${cls}">${txt}</span>${extra}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="vazio">Nenhuma linha com nome nesta aba.</td></tr>';
+  $('imp-ok').disabled = !r.resumo.ok;
+  $('imp-ok').textContent = r.resumo.ok ? `Importar ${r.resumo.ok} colaboradores` : 'Nada para importar';
+}
+function fecharImportacao() { $('imp').classList.remove('on'); imp = null; }
+async function confirmarImportacao() {
+  const r = imp && imp.resultado; if (!r) return;
+  const criar = $('imp-criar').checked;
+  $('imp-ok').disabled = true; $('imp-ok').textContent = 'Importando…';
+  try {
+    // 1) postos novos
+    const idPorChave = {};
+    const usados = r.postosNovos.filter(p => r.itens.some(i => i.status === 'ok' && i.posto && i.posto.chave === p.chave));
+    if (criar && usados.length) {
+      const { data, error } = await sb.from('postos').insert(usados.map(p => ({ nome: p.nome, lat: null, lng: null }))).select('id,nome');
+      if (error) throw new Error('Erro ao criar os postos: ' + error.message);
+      data.forEach(p => { idPorChave[Importador.chavePosto(p.nome)] = p.id; });
+    }
+    // 2) colaboradores (atualiza quem já tem o mesmo CPF)
+    const regs = r.itens.filter(i => i.status === 'ok').map(i => {
+      const reg = { cpf: i.cpf, nome: i.nome, funcao: i.funcao, empresa: i.empresa };
+      if (i.posto && !i.posto.novo) reg.posto_id = i.posto.id;
+      else if (i.posto && i.posto.novo && criar) reg.posto_id = idPorChave[i.posto.chave] ?? null;
+      return reg;
+    });
+    // quem não tem posto na planilha mantém o posto que já tinha
+    for (const grupo of [regs.filter(x => 'posto_id' in x), regs.filter(x => !('posto_id' in x))]) {
+      for (let k = 0; k < grupo.length; k += 200) {
+        const { error } = await sb.from('colaboradores').upsert(grupo.slice(k, k + 200), { onConflict: 'cpf' });
+        if (error) throw new Error('Erro ao gravar colaboradores: ' + error.message);
+      }
+    }
+    const fora = r.itens.filter(i => i.status === 'sem_cpf' || i.status === 'cpf_invalido');
+    fecharImportacao(); await carregarBase(); desenharColab();
+    msg('colab-msg', `${regs.length} colaboradores importados/atualizados` + (criar && usados.length ? ` e ${usados.length} postos criados (marque o local de cada um em "Postos e raio GPS")` : '') + '.'
+      + (fora.length ? ` Ficaram de fora por falta de CPF válido: ${fora.map(i => i.nome).join(', ')}.` : ''), !fora.length);
+  } catch (e) {
+    msg('imp-msg', e.message || 'Erro ao importar.'); $('imp-ok').disabled = false; $('imp-ok').textContent = `Importar ${r.resumo.ok} colaboradores`;
+  }
 }
 
 // ---------- MAPA DO POSTO ----------
@@ -660,11 +784,15 @@ function escolherResultado(i) {
 
 // ---------- POSTOS ----------
 function desenharPostos() {
-  $('postos-corpo').innerHTML = postos.length ? postos.map(p => `<tr>
-    <td style="min-width:190px"><b>${esc(p.nome)}</b>
+  const semLocal = postos.filter(p => p.lat == null && p.ativo).length;
+  $('postos-semlocal').style.display = semLocal ? 'block' : 'none';
+  $('postos-semlocal').innerHTML = `<b>${semLocal} ${semLocal === 1 ? 'posto está' : 'postos estão'} sem local.</b> O ponto desses postos fica bloqueado até você marcar o local: clique em <b>Marcar no mapa</b>, digite o endereço e clique em Localizar.`;
+  const lista = postos.slice().sort((a, b) => ((a.lat == null ? 0 : 1) - (b.lat == null ? 0 : 1)) || a.nome.localeCompare(b.nome));
+  $('postos-corpo').innerHTML = lista.length ? lista.map(p => `<tr>
+    <td style="min-width:190px"><b>${esc(p.nome)}</b>${p.lat == null ? '<br><span class="sem-local">SEM LOCAL · ponto bloqueado</span>' : ''}
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn peq" onclick="abrirRondaBox(${p.id})">QR da ronda</button><button class="btn sec peq" onclick="editarPosto(${p.id})">Editar</button></div></td>
     <td>${esc(p.endereco || '')}</td>
-    <td><a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" rel="noopener">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</a></td>
+    <td>${p.lat == null ? `<button class="btn peq" onclick="editarPosto(${p.id})">Marcar no mapa</button>` : `<a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" rel="noopener">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</a>`}</td>
     <td>${p.raio_m} m</td><td>${colabs.filter(c => c.posto_id === p.id && c.ativo).length}</td>
     <td>${pontosRonda.filter(r => r.posto_id === p.id && r.ativo).length} pontos</td>
     <td>${p.ativo ? '<span class="tag ok">Ativo</span>' : '<span class="tag al">Inativo</span>'}</td>
@@ -673,9 +801,11 @@ function desenharPostos() {
 }
 function editarPosto(id) {
   const p = postos.find(x => x.id === id);
-  $('p-id').value = p.id; $('p-nome').value = p.nome; $('p-end').value = p.endereco || ''; $('p-coord').value = `${p.lat}, ${p.lng}`;
+  $('p-id').value = p.id; $('p-nome').value = p.nome; $('p-end').value = p.endereco || ''; $('p-coord').value = p.lat == null ? '' : `${p.lat}, ${p.lng}`;
   $('p-raio').value = p.raio_m; $('p-ativo').value = String(p.ativo); $('p-salvar').textContent = 'Salvar alterações';
-  irPara('postos'); iniciarMapa(); marcarLocal(p.lat, p.lng, 18); $('form-posto').scrollIntoView({ behavior: 'smooth' });
+  irPara('postos'); iniciarMapa();
+  if (p.lat == null) { limparMapa(); msg('posto-msg', `Digite o endereço do posto ${p.nome} e clique em Localizar. Depois confira o pino no mapa e clique em Salvar alterações.`, true); setTimeout(() => $('p-end').focus(), 300); }
+  else marcarLocal(p.lat, p.lng, 18);
   $('form-posto').scrollIntoView({ behavior: 'smooth' });
 }
 function limparPosto() { $('form-posto').reset(); $('p-id').value = ''; $('p-raio').value = 150; $('p-salvar').textContent = 'Adicionar'; limparMapa(); }

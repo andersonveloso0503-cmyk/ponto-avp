@@ -41,7 +41,11 @@ App de ponto da AVP Terceirização. O colaborador bate o ponto pelo celular com
 1. Abra o **painel > Postos e raio GPS** e cadastre cada posto:
    - Local: digite o endereço e clique em **Localizar**, escolha o resultado e confira no mapa. Se o pino não estiver no prédio certo, clique no lugar exato do mapa ou arraste o pino. Também dá para estar no posto e tocar em "Usar minha localização".
    - Raio: **150 m** é um bom começo. Em prédio alto ou área com sinal ruim, use 200 a 300 m.
-2. Abra **Colaboradores > Importar planilha** e use o `modelo_colaboradores.xlsx`. O nome do posto na planilha precisa ser igual ao nome cadastrado.
+2. Abra **Colaboradores > Importar planilha** e escolha a planilha do RH **do jeito que ela estiver**: as colunas podem estar em qualquer ordem e ter outros títulos ("Funcionário", "Cargo", "Local"…), e pode haver títulos e linhas em branco no topo. O painel:
+   - acha sozinho a aba, a linha dos títulos e as colunas de nome, CPF, função, posto e empresa (dá para corrigir na prévia);
+   - confere os CPFs (os sem CPF ou com CPF inválido ficam de fora e aparecem na lista);
+   - liga o posto da planilha ao posto cadastrado mesmo com nome um pouco diferente ("VILLA CARRARA" = "Condomínio Vila Carrara");
+   - cria os postos que ainda não existem, **sem local**: depois abra cada um em "Postos e raio GPS" › **Marcar no mapa**. Até marcar, o ponto desse posto fica bloqueado.
 3. Mande o link para os colaboradores. No celular, cada um:
    - toca em **"Criar senha com CPF e nome"** (o nome completo precisa ser igual ao cadastro, mas acento e maiúscula não importam);
    - permite **localização** e **câmera**;

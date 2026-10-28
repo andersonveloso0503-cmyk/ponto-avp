@@ -149,6 +149,7 @@ td .peq{font-size:12px;color:var(--cinza)}
         <div class="kpi"><span>Em intervalo</span><b id="k-int">0</b></div>
         <div class="kpi"><span>Sem registro hoje</span><b id="k-sem" style="color:var(--al)">0</b></div>
         <div class="kpi"><span>Bloqueios hoje</span><b id="k-bloq" style="color:var(--al)">0</b></div>
+        <div class="kpi"><span>Rosto a conferir hoje</span><b id="k-rosto" style="color:var(--al)">0</b></div>
       </div>
       <div class="caixa"><table>
         <thead><tr><th>Colaborador</th><th>Posto</th><th>Último registro</th><th>Selfie</th><th>Distância</th><th>Situação</th></tr></thead>
@@ -296,7 +297,11 @@ td .peq{font-size:12px;color:var(--cinza)}
 <div id="modal" class="modal" onclick="if(event.target===this)fecharModal()">
   <div class="box" role="dialog" aria-modal="true" aria-labelledby="m-titulo">
     <div style="display:flex;justify-content:space-between;align-items:center"><b id="m-titulo" style="font-size:17px"></b><button class="btn sec peq" onclick="fecharModal()">Fechar</button></div>
-    <img id="m-foto" alt="Selfie do registro">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <figure style="margin:0;display:flex;flex-direction:column;gap:4px"><img id="m-foto" alt="Selfie da batida" style="aspect-ratio:3/4;min-height:0"><figcaption class="sub" style="margin:0;text-align:center">Selfie da batida</figcaption></figure>
+      <figure style="margin:0;display:flex;flex-direction:column;gap:4px"><img id="m-ref" alt="Foto de cadastro do rosto" style="aspect-ratio:3/4;min-height:0"><figcaption class="sub" style="margin:0;text-align:center">Foto de cadastro</figcaption></figure>
+    </div>
+    <div id="m-rosto"></div>
     <div id="m-info"></div>
     <a id="m-mapa" class="btn sec" style="display:flex;align-items:center;justify-content:center;text-decoration:none" target="_blank" rel="noopener">Ver local no mapa</a>
   </div>
@@ -407,6 +412,13 @@ async function urlsAssinadas(caminhos) {
 }
 
 // ---------- HOJE ----------
+const ROSTO = {
+  ok: ['ok', 'Rosto conferido'], nao_confere: ['al', 'Rosto não confere'],
+  sem_rosto: ['al', 'Rosto não detectado'], sem_cadastro: ['ne', 'Sem cadastro do rosto']
+};
+const rostoAlerta = r => r && (r.face_status === 'nao_confere' || r.face_status === 'sem_rosto');
+const tagRosto = r => r && ROSTO[r.face_status] ? `<span class="tag ${ROSTO[r.face_status][0]}">${ROSTO[r.face_status][1]}</span>` : '';
+
 async function carregarHoje() {
   const h = hojeSP();
   $('hoje-data').textContent = new Date(h + 'T12:00:00-03:00').toLocaleDateString('pt-BR', { timeZone: TZ, weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -437,12 +449,13 @@ function desenharHoje() {
   }).sort((a, b) => a.ordem - b.ordem || a.c.nome.localeCompare(b.c.nome));
   $('k-trab').textContent = trab; $('k-int').textContent = inter; $('k-sem').textContent = sem;
   $('k-bloq').textContent = bloqHoje.filter(b => !filtro || String(b.posto_id) === filtro).length;
+  $('k-rosto').textContent = regsHoje.filter(r => rostoAlerta(r) && new Date(r.registrado_em) >= ini && (!filtro || String(r.posto_id) === filtro)).length;
   $('hoje-corpo').innerHTML = linhas.length ? linhas.map(({ c, ult, sit, cls }) => {
     const url = ult && window._urls[ult.foto_path];
     return `<tr>
       <td><b>${esc(c.nome)}</b><div class="peq">${esc(c.funcao || '')}</div></td>
       <td>${esc(nomePosto(c.posto_id))}</td>
-      <td>${ult ? `<button class="marca-h" onclick="verRegistro(${ult.id})">${NOMES[ult.tipo]} · ${hora(ult.registrado_em)}</button>` : '—'}</td>
+      <td>${ult ? `<button class="marca-h" onclick="verRegistro(${ult.id})">${NOMES[ult.tipo]} · ${hora(ult.registrado_em)}</button>${rostoAlerta(ult) || ult.face_status === 'sem_cadastro' ? '<div style="margin-top:4px">' + tagRosto(ult) + '</div>' : ''}` : '—'}</td>
       <td>${url ? `<button class="foto" style="background:url('${url}') center/cover" aria-label="Ver selfie de ${esc(c.nome)}" onclick="verRegistro(${ult.id})"></button>` : '<span class="foto"></span>'}</td>
       <td>${ult ? fmtDist(ult.distancia_m) : '—'}</td>
       <td><span class="tag ${cls}">${sit}</span></td></tr>`;
@@ -455,14 +468,18 @@ async function verRegistro(id) {
   if (!r) return;
   const c = colabPorId(r.colaborador_id);
   $('m-titulo').textContent = `${NOMES[r.tipo]} · ${dataHora(r.registrado_em)}`;
-  $('m-foto').removeAttribute('src');
+  $('m-foto').removeAttribute('src'); $('m-ref').removeAttribute('src');
+  $('m-rosto').innerHTML = r.face_status ? `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${tagRosto(r)}${r.face_dist != null ? `<span class="sub" style="margin:0">semelhança: ${Math.max(0, Math.round((1 - r.face_dist / 1.2) * 100))}%</span>` : ''}</div>` : '';
   $('m-info').innerHTML = [['Colaborador', c.nome], ['CPF', fmtCpf(c.cpf)], ['Posto', nomePosto(r.posto_id)], ['Distância do posto', fmtDist(r.distancia_m)],
     ['Precisão do GPS', r.precisao_m ? '±' + Math.round(r.precisao_m) + ' m' : '—'], ['NSR', String(r.id).padStart(9, '0')]]
     .map(([a, b]) => `<div class="linha-info"><span>${a}</span><span>${esc(b)}</span></div>`).join('');
   $('m-mapa').href = `https://www.google.com/maps?q=${r.lat},${r.lng}`;
   $('modal').classList.add('on');
-  const u = (window._urls || {})[r.foto_path] || (await urlsAssinadas([r.foto_path]))[r.foto_path];
-  if (u) $('m-foto').src = u;
+  const faltam = [r.foto_path, c.face_foto_path].filter(x => x && !(window._urls || {})[x]);
+  const novas = faltam.length ? await urlsAssinadas(faltam) : {};
+  const url = x => x && ((window._urls || {})[x] || novas[x]);
+  if (url(r.foto_path)) $('m-foto').src = url(r.foto_path);
+  if (url(c.face_foto_path)) $('m-ref').src = url(c.face_foto_path);
 }
 function fecharModal() { $('modal').classList.remove('on'); }
 
@@ -510,7 +527,7 @@ async function carregarEspelho() {
   espelhoRegs = regs; espelhoJornadas = agrupaJornadas(regs);
   const tot = espelhoJornadas.reduce((s, j) => s + j.ms, 0);
   $('esp-total').textContent = `${espelhoJornadas.length} jornadas · ${fmtHoras(tot)} trabalhadas`;
-  const cel = m => m ? `<button class="marca-h" onclick="verRegistro(${m.id})">${hora(m.registrado_em)}</button>` : '<span style="color:#8C9AB0">—</span>';
+  const cel = m => m ? `<button class="marca-h" onclick="verRegistro(${m.id})" ${rostoAlerta(m) ? 'style="color:var(--al)" title="Rosto não confere"' : ''}>${hora(m.registrado_em)}${rostoAlerta(m) ? ' ⚠' : ''}</button>` : '<span style="color:#8C9AB0">—</span>';
   $('esp-corpo').innerHTML = espelhoJornadas.length ? espelhoJornadas.map(j => {
     const c = colabPorId(j.colaborador_id);
     return `<tr><td>${dataBR(j.inicio)}</td><td><b>${esc(c.nome)}</b></td><td>${esc(nomePosto(j.posto_id))}</td>
@@ -526,7 +543,8 @@ function exportarEspelhoExcel() {
     const c = colabPorId(j.colaborador_id);
     return { 'Data': dataBR(j.inicio), 'Colaborador': c.nome, 'CPF': fmtCpf(c.cpf), 'Função': c.funcao || '', 'Posto': nomePosto(j.posto_id),
       'Entrada': h(j.marcas.entrada), 'Saída intervalo': h(j.marcas.saida_intervalo), 'Volta intervalo': h(j.marcas.volta_intervalo), 'Saída': h(j.marcas.saida),
-      'Horas': j.completa ? fmtHoras(j.ms) : 'em aberto', 'Horas (decimal)': j.completa ? +(j.ms / 3600e3).toFixed(2) : '' };
+      'Horas': j.completa ? fmtHoras(j.ms) : 'em aberto', 'Horas (decimal)': j.completa ? +(j.ms / 3600e3).toFixed(2) : '',
+      'Rosto a conferir': j.todas.some(rostoAlerta) ? 'SIM' : '' };
   });
   // resumo por colaborador
   const resumo = {};
@@ -589,9 +607,9 @@ function desenharColab() {
     grupoAtual = g;
     return cab + `<tr>
     <td style="min-width:200px"><b>${esc(c.nome)}</b>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn sec peq" onclick="editarColab(${c.id})">Editar</button>${c.user_id ? `<button class="btn sec peq" onclick="resetarAcesso(${c.id})">Esqueceu a senha</button>` : ''}</div></td>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn sec peq" onclick="editarColab(${c.id})">Editar</button>${c.user_id ? `<button class="btn sec peq" onclick="resetarAcesso(${c.id})">Esqueceu a senha</button>` : ''}${c.face_ref ? `<button class="btn sec peq" onclick="refazerRosto(${c.id})">Refazer rosto</button>` : ''}</div></td>
     <td>${fmtCpf(c.cpf)}</td><td>${esc(c.funcao || '')}${c.empresa ? `<div class="peq">${esc(c.empresa)}</div>` : ''}</td><td>${esc(nomePosto(c.posto_id))}</td>
-    <td>${c.user_id ? '<span class="tag ok">Com senha</span>' : '<span class="tag ne">Não acessou</span>'}</td>
+    <td>${c.user_id ? '<span class="tag ok">Com senha</span>' : '<span class="tag ne">Não acessou</span>'}<div style="margin-top:4px">${c.face_ref ? '<span class="tag ok">Rosto cadastrado</span>' : '<span class="tag ne">Rosto pendente</span>'}</div></td>
     <td>${c.ativo ? '<span class="tag ok">Ativo</span>' : '<span class="tag al">Inativo</span>'}</td>
     </tr>`; }).join('')
     : '<tr><td colspan="6" class="vazio">Nenhum colaborador.</td></tr>';
@@ -613,6 +631,14 @@ async function salvarColab(e) {
   const { error } = id ? await sb.from('colaboradores').update(reg).eq('id', id) : await sb.from('colaboradores').insert(reg);
   if (error) return msg('colab-msg', /duplicate/.test(error.message) ? 'Já existe colaborador com esse CPF.' : error.message);
   msg('colab-msg', 'Salvo.', true); limparColab(); await carregarBase(); desenharColab();
+}
+async function refazerRosto(id) {
+  const c = colabPorId(id);
+  if (!confirm(`Apagar a foto de cadastro do rosto de ${c.nome}?\n\nNa próxima vez que abrir o app, ele vai precisar cadastrar o rosto de novo antes de bater o ponto.`)) return;
+  const { error } = await sb.from('colaboradores').update({ face_ref: null, face_foto_path: null, face_cadastrado_em: null }).eq('id', id);
+  if (error) return msg('colab-msg', error.message);
+  msg('colab-msg', `Cadastro do rosto de ${c.nome} apagado. Ele vai cadastrar de novo ao abrir o app.`, true);
+  await carregarBase(); desenharColab();
 }
 function resetarAcesso(id) {
   const c = colabPorId(id);

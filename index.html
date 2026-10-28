@@ -90,6 +90,8 @@ nav.abas button.on{color:var(--azul)}
 .passo .n{flex-shrink:0;width:34px;height:34px;border-radius:50%;background:var(--azul);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:16px}
 .passo p{margin:0;font-size:16px;line-height:1.45}
 .passo .ic{display:inline-flex;vertical-align:middle;background:#E6EAF0;border-radius:8px;padding:3px 6px;margin:0 2px}
+.cartao-rosto{background:#fff;border:2px solid #C9D7F5;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.cartao-rosto p{margin:0;font-size:15px;line-height:1.5;color:#2B3A50}
 .check{width:72px;height:72px;border-radius:50%;background:var(--ok-bg);display:flex;align-items:center;justify-content:center;margin:0 auto}
 </style>
 </head>
@@ -170,6 +172,7 @@ nav.abas button.on{color:var(--azul)}
     <span id="h-gps" class="pilula">Buscando localização…</span>
   </div>
   <div id="h-erro" class="erro claro" role="alert" style="margin:16px 24px 0"></div>
+  <div id="h-ok" class="erro" role="status" style="margin:16px 24px 0;background:#DCF3E8;color:#0B5D3B;font-weight:600"></div>
   <div id="h-botoes" style="padding:20px 24px 0;display:flex;flex-direction:column;gap:12px"></div>
   <div id="h-ronda" style="padding:22px 24px 0;display:none;flex-direction:column;gap:10px">
     <div style="display:flex;justify-content:space-between;align-items:baseline"><p class="rotulo">Ronda do posto</p><span id="h-ronda-cont" style="font-size:13px;font-weight:700;color:var(--cinza)"></span></div>
@@ -201,14 +204,14 @@ nav.abas button.on{color:var(--azul)}
     <video id="c-video" playsinline autoplay muted></video>
     <div class="oval"></div>
   </div>
-  <div class="info">
+  <div class="info" id="c-info">
     <div><span>Local</span><span id="c-posto"></span></div>
     <div><span>Distância do posto</span><span id="c-dist">—</span></div>
   </div>
   <div id="c-erro" class="erro" role="alert" style="margin:14px 24px 0"></div>
   <div style="margin:auto 24px calc(env(safe-area-inset-bottom) + 24px);padding-top:16px;display:flex;flex-direction:column;gap:10px">
-    <button id="c-confirmar" class="btn" style="height:58px;font-weight:800" onclick="confirmarPonto()">Tirar foto e confirmar</button>
-    <p style="margin:0;text-align:center;font-size:12px;color:#B8C4D6">Depois de confirmado, o registro não pode ser apagado.</p>
+    <button id="c-confirmar" class="btn" style="height:58px;font-weight:800" onclick="modoCamera === 'rosto' ? confirmarCadastroRosto() : confirmarPonto()">Tirar foto e confirmar</button>
+    <p id="c-nota" style="margin:0;text-align:center;font-size:12px;color:#B8C4D6">Depois de confirmado, o registro não pode ser apagado.</p>
   </div>
 </section>
 
@@ -355,6 +358,8 @@ async function carregarHome() {
     return;
   }
   status = data;
+  prepararRosto().catch(() => {});
+  $('h-ok').textContent = avisoOk || ''; $('h-ok').style.display = avisoOk ? 'block' : 'none'; avisoOk = '';
   $('h-nome').textContent = data.colaborador.nome;
   $('h-posto').textContent = [data.colaborador.funcao, data.posto ? 'Posto ' + data.posto.nome : 'Sem posto definido'].filter(Boolean).join(' · ');
   // jornada
@@ -413,11 +418,19 @@ function desenharBotoes() {
   const pill = $('h-gps');
   pill.className = 'pilula ' + (g.ok ? 'ok' : (g.esperando ? '' : 'ruim'));
   pill.textContent = g.txt;
+  if (!status.colaborador.rosto_cadastrado) {
+    box.innerHTML = `<div class="cartao-rosto">
+      <div style="display:flex;gap:12px;align-items:center"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><circle cx="12" cy="10" r="3"/><path d="M7.5 17a5 5 0 0 1 9 0"/></svg>
+      <b style="font-size:18px">Cadastre seu rosto</b></div>
+      <p>Antes do primeiro ponto, tire uma foto do seu rosto. Ela é usada para conferir que é você em cada batida.</p>
+      <button class="btn" onclick="abrirCadastroRosto()">Cadastrar meu rosto</button></div>`;
+    return;
+  }
   const p = status.permitidos || ['entrada'];
   box.innerHTML = p.map((t, i) => `
     <button class="btn-ponto ${i ? 'sec' : ''}" ${g.ok ? '' : 'disabled'} onclick="abrirCamera('${t}')">
       <span class="t">Registrar ${NOMES[t].toLowerCase()}</span>
-      ${i ? '' : `<span class="s">${g.ok ? 'tira a selfie e grava a localização' : 'disponível quando estiver no posto'}</span>`}
+      ${i ? '' : `<span class="s">${g.ok ? 'confere seu rosto e grava a localização' : 'disponível quando estiver no posto'}</span>`}
     </button>`).join('');
 }
 
@@ -444,12 +457,27 @@ function posicaoFresca() {
 // ---------- câmera ----------
 async function abrirCamera(tipo) {
   fecharScanner();
-  tipoEscolhido = tipo;
+  tipoEscolhido = tipo; modoCamera = 'ponto';
   $('c-titulo').textContent = 'Registrar ' + NOMES[tipo].toLowerCase();
   $('c-posto').textContent = status.posto.nome;
+  $('c-info').style.display = 'flex'; $('c-confirmar').textContent = 'Tirar foto e confirmar';
+  $('c-nota').textContent = 'Depois de confirmado, o registro não pode ser apagado.';
   erro('c-erro'); atualizarDistCamera();
   $('c-confirmar').disabled = false;
   mostrar('tela-camera');
+  await ligarCameraFrontal();
+}
+async function abrirCadastroRosto() {
+  fecharScanner(); pararGps(); modoCamera = 'rosto';
+  $('c-titulo').textContent = 'Cadastrar meu rosto';
+  $('c-info').style.display = 'none'; $('c-confirmar').textContent = 'Tirar foto de cadastro';
+  $('c-nota').textContent = 'Fique de frente, em lugar claro, sem boné e sem óculos escuros. Encaixe o rosto no oval.';
+  erro('c-erro'); $('c-confirmar').disabled = false;
+  mostrar('tela-camera');
+  prepararRosto().catch(() => {});
+  await ligarCameraFrontal();
+}
+async function ligarCameraFrontal() {
   try {
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } }, audio: false });
     $('c-video').srcObject = stream;
@@ -461,20 +489,77 @@ async function abrirCamera(tipo) {
 function atualizarDistCamera() { if ($('tela-camera').classList.contains('ativa')) { const g = situacaoGps(); $('c-dist').textContent = g.d != null ? fmtDist(g.d) + (g.ok ? ' · dentro do raio' : ' · fora do raio') : '—'; } }
 function fecharCamera() { if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; }
 
-function capturarFoto() {
+function capturarCanvas() {
   const v = $('c-video');
   if (!v.videoWidth) throw new Error('A câmera ainda não abriu. Aguarde um segundo e tente de novo.');
   const w = 480, h = Math.round(v.videoHeight * (w / v.videoWidth));
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d'); ctx.translate(w, 0); ctx.scale(-1, 1); ctx.drawImage(v, 0, 0, w, h);
-  return new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.72));
+  return c;
+}
+const blobDe = c => new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.72));
+
+// ---------- reconhecimento facial (roda no próprio celular) ----------
+const FACE_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/';
+let faceProm = null, modoCamera = 'ponto', avisoOk = '';
+function prepararRosto() {
+  if (faceProm) return faceProm;
+  faceProm = (async () => {
+    if (!window.faceapi) await new Promise((ok, falha) => {
+      const sc = document.createElement('script'); sc.src = FACE_URL + 'dist/face-api.js';
+      sc.onload = ok; sc.onerror = () => falha(new Error('Não consegui carregar o reconhecimento facial.'));
+      document.head.appendChild(sc);
+    });
+    const m = FACE_URL + 'model/';
+    await Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri(m), faceapi.nets.faceLandmark68Net.loadFromUri(m), faceapi.nets.faceRecognitionNet.loadFromUri(m)]);
+    return faceapi;
+  })();
+  faceProm.catch(() => { faceProm = null; });
+  return faceProm;
+}
+async function descreverRosto(canvas) {
+  const fa = await prepararRosto();
+  const det = await fa.detectSingleFace(canvas, new fa.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.4 })).withFaceLandmarks().withFaceDescriptor();
+  return det ? Array.from(det.descriptor) : null;
+}
+const comLimite = (p, ms) => Promise.race([p, new Promise(ok => setTimeout(() => ok(undefined), ms))]);
+
+async function confirmarCadastroRosto() {
+  erro('c-erro'); $('c-confirmar').disabled = true;
+  try {
+    const canvas = capturarCanvas();
+    carregando(true, 'Lendo seu rosto…');
+    let rosto;
+    try { rosto = await comLimite(descreverRosto(canvas), 45000); }
+    catch (e) { throw new Error('Não consegui carregar o reconhecimento facial. Verifique a internet e tente de novo.'); }
+    if (rosto === undefined) throw new Error('A leitura demorou demais. Verifique a internet e tente de novo.');
+    if (!rosto) throw new Error('Não encontrei seu rosto na foto. Fique de frente para a câmera, em lugar claro, e tente de novo.');
+    carregando(true, 'Salvando…');
+    const { data: u } = await sb.auth.getUser();
+    const caminho = `${u.user.id}/rosto-${Date.now()}.jpg`;
+    const { error: eUp } = await sb.storage.from('selfies').upload(caminho, await blobDe(canvas), { contentType: 'image/jpeg' });
+    if (eUp) throw new Error('Falha ao enviar a foto. Verifique a internet.');
+    const { data, error } = await sb.rpc('cadastrar_rosto', { p_face: rosto, p_foto: caminho });
+    if (error) throw new Error('Erro no servidor: ' + error.message);
+    if (!data.ok) throw new Error(data.motivo);
+    carregando(false); fecharCamera();
+    avisoOk = 'Rosto cadastrado! Agora você já pode bater o ponto.';
+    carregarHome();
+  } catch (e) {
+    carregando(false); erro('c-erro', e.message || 'Não foi possível cadastrar.'); $('c-confirmar').disabled = false;
+  }
 }
 
 async function confirmarPonto() {
   erro('c-erro');
   $('c-confirmar').disabled = true;
   try {
-    const foto = await capturarFoto();
+    const canvas = capturarCanvas(), foto = await blobDe(canvas);
+    let rosto = null;
+    if (status.colaborador.rosto_cadastrado) {
+      carregando(true, 'Conferindo seu rosto…');
+      try { rosto = (await comLimite(descreverRosto(canvas), 25000)) || null; } catch (e) { rosto = null; }
+    }
     carregando(true, 'Pegando sua localização…');
     const pos = await posicaoFresca();
     carregando(true, 'Enviando selfie…');
@@ -485,7 +570,7 @@ async function confirmarPonto() {
     carregando(true, 'Registrando ponto…');
     const { data, error } = await sb.rpc('bater_ponto', {
       p_lat: pos.lat, p_lng: pos.lng, p_precisao: pos.precisao, p_foto: caminho,
-      p_tipo: tipoEscolhido, p_dispositivo: navigator.userAgent
+      p_tipo: tipoEscolhido, p_dispositivo: navigator.userAgent, p_face: rosto
     });
     carregando(false);
     if (error) throw new Error('Erro no servidor: ' + error.message);
@@ -506,6 +591,7 @@ function mostrarComprovante(d) {
     ['Empregador', CFG.EMPRESA.razao_social], ['CNPJ', CFG.EMPRESA.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')],
     ['Colaborador', d.colaborador.nome], ['CPF', fmtCpf(d.colaborador.cpf)], ['Tipo', NOMES[r.tipo]],
     ['Data e hora', dataHora(r.registrado_em)], ['Posto', d.posto.nome], ['Distância', r.distancia_m + ' m'],
+    ['Rosto', { ok: 'Conferido', nao_confere: 'Não conferiu (o RH vai verificar)', sem_rosto: 'Não detectado (o RH vai verificar)', sem_cadastro: '—' }[r.face_status] || '—'],
     ['NSR', String(r.nsr).padStart(9, '0')], ['Código', r.hash.slice(0, 16).toUpperCase()]
   ];
   $('cp-dados').innerHTML = linhas.map(([a, b]) => `<div class="item"><span style="color:#4A5A70">${a}</span><b style="text-align:right">${b}</b></div>`).join('');

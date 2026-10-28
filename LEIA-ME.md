@@ -68,6 +68,13 @@ No painel, a aba **Rondas** mostra, por período, quantas passagens teve cada po
 
 > Se um QR Code for perdido ou copiado, clique em **Desativar** nele e cadastre o ponto de novo. O código antigo para de funcionar.
 
+## Reconhecimento facial
+
+- No primeiro acesso, antes do primeiro ponto, o colaborador tira uma **foto de cadastro do rosto**.
+- Em cada batida, o celular compara a selfie com essa foto. O reconhecimento roda no próprio celular, sem custo mensal.
+- Se o rosto **não conferir** (ou não for detectado), o ponto **é gravado mesmo assim**, mas fica marcado com alerta. No painel aparecem a etiqueta "Rosto não confere", o contador "Rosto a conferir hoje" e um ⚠ no espelho. Clicando no horário, você vê a selfie ao lado da foto de cadastro.
+- Para o colaborador refazer a foto de cadastro (trocou o visual, foto ruim): em Colaboradores, clique em **Refazer rosto**.
+
 ## Como funciona o bloqueio
 
 Quem decide é o servidor, não o celular:

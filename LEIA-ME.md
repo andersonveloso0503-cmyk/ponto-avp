@@ -51,6 +51,12 @@ App de ponto da AVP Terceirização. O colaborador bate o ponto pelo celular com
    - permite **localização** e **câmera**;
    - toca em **"Instale o app no seu celular"**, na tela de entrada. O app mostra o passo a passo certo para o celular dele (Android, iPhone ou Samsung). No Android com Chrome aparece um botão **Instalar agora**.
 
+## App Android (APK)
+
+No Android, a tela "Instale o app no seu celular" mostra o botão **Baixar o app (Android)**, que baixa o arquivo `PontoAVP.apk`. Também dá para mandar o link direto: `https://andersonveloso0503-cmyk.github.io/ponto-avp/PontoAVP.apk`.
+Como o app não vem da Play Store, o celular pede para **permitir instalar desta fonte** e o Play Protect pode avisar; é só tocar em "Instalar mesmo assim".
+O app abre o sistema do site, então atualizações chegam sozinhas, sem reinstalar. No iPhone continua o "Adicionar à Tela de Início" pelo Safari.
+
 ## Funcionários por posto
 
 Cada colaborador fica ligado a um posto (ex.: Sidnei → Condomínio Vila Carrara). Ele só consegue bater ponto e fazer ronda dentro do raio do **seu** posto. No painel, a aba **Colaboradores** mostra a lista separada por posto e tem um filtro de posto. Para trocar alguém de posto, é só editar.

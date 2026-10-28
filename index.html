@@ -731,7 +731,8 @@ const ehAndroid = /Android/i.test(ua);
 const ehSamsung = /SamsungBrowser/i.test(ua);
 const ehSafariIOS = ehIOS && /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA|FBAN|FBAV|Instagram|WhatsApp/i.test(ua);
 const ehAppInterno = /FBAN|FBAV|Instagram|WhatsApp|Line\//i.test(ua) || (ehIOS && !/Safari/i.test(ua));
-const instalado = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const noAppAndroid = /PontoAVPApp/.test(ua);
+const instalado = () => noAppAndroid || window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedidoInstalar = e; mostrarAvisoInstalar(); if ($('tela-instalar').classList.contains('ativa')) desenharInstalar(); });
 window.addEventListener('appinstalled', () => { pedidoInstalar = null; mostrarAvisoInstalar(); });
@@ -771,6 +772,16 @@ function desenharInstalar() {
   if (instalado()) {
     aparelho = 'Já está instalado';
     html = passos([['O app já está instalado neste celular. Abra sempre pelo ícone <b>Ponto AVP</b>.']]);
+  } else if (ehAndroid && !ehAppInterno) {
+    aparelho = 'Android';
+    html = `<a class="btn" href="PontoAVP.apk" download="PontoAVP.apk" style="height:64px;font-size:19px;display:flex;align-items:center;justify-content:center;text-decoration:none">Baixar o app (Android)</a>` +
+      passos([
+        ['Toque no botão azul <b>Baixar o app</b>. Se aparecer um aviso, toque em <b>Baixar mesmo assim</b>.'],
+        ['Quando terminar, toque em <b>Abrir</b> (ou abra o arquivo <b>PontoAVP.apk</b> em Downloads).'],
+        ['Se o celular pedir, toque em <b>Configurações</b>, ligue <b>Permitir desta fonte</b> e volte.'],
+        ['Toque em <b>Instalar</b>. Se aparecer um aviso do Play Protect, toque em <b>Mais detalhes › Instalar mesmo assim</b>.'],
+        ['Abra o <b>Ponto AVP</b> e toque em <b>Permitir</b> para câmera e localização.']]) +
+      (pedidoInstalar ? `<p style="margin:4px 0 0;text-align:center;font-size:14px;color:var(--cinza)">Não quer baixar arquivo? <button class="link" style="color:var(--azul)" onclick="instalarAgora()">Instalar pelo navegador</button></p>` : '');
   } else if (pedidoInstalar) {
     aparelho = ehAndroid ? 'Android' : 'Seu aparelho';
     html = `<button class="btn" style="height:64px;font-size:19px" onclick="instalarAgora()">Instalar agora</button>` +

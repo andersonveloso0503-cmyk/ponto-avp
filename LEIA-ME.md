@@ -47,7 +47,7 @@ App de ponto da AVP Terceirização. O colaborador bate o ponto pelo celular com
    - liga o posto da planilha ao posto cadastrado mesmo com nome um pouco diferente ("VILLA CARRARA" = "Condomínio Vila Carrara");
    - cria os postos que ainda não existem, **sem local**: depois abra cada um em "Postos e raio GPS" › **Marcar no mapa**. Até marcar, o ponto desse posto fica bloqueado.
 3. Mande o link para os colaboradores. No celular, cada um:
-   - toca em **"Criar senha com CPF e nome"** (o nome completo precisa ser igual ao cadastro, mas acento e maiúscula não importam);
+   - toca em **"Criar senha com CPF e primeiro nome"** (basta o primeiro nome; acento, maiúscula e minúscula não importam);
    - permite **localização** e **câmera**;
    - toca em **"Instale o app no seu celular"**, na tela de entrada. O app mostra o passo a passo certo para o celular dele (Android, iPhone ou Samsung). No Android com Chrome aparece um botão **Instalar agora**.
 

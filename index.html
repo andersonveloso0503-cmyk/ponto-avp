@@ -111,7 +111,7 @@ nav.abas button.on{color:var(--azul)}
     <div class="campo"><label for="login-senha">Senha</label><input id="login-senha" type="password" autocomplete="current-password" required></div>
     <div id="login-erro" class="erro" role="alert"></div>
     <button class="btn" type="submit">Entrar</button>
-    <p style="margin:0;text-align:center;font-size:14px;color:#B8C4D6">Primeiro acesso?<br><button type="button" class="link" onclick="mostrar('tela-primeiro')">Criar senha com CPF e nome</button></p>
+    <p style="margin:0;text-align:center;font-size:14px;color:#B8C4D6">Primeiro acesso?<br><button type="button" class="link" onclick="mostrar('tela-primeiro')">Criar senha com CPF e primeiro nome</button></p>
     <p style="margin:0;text-align:center;font-size:13px;color:#8C9AB0">Esqueceu a senha? Fale com o RH para liberar um novo cadastro.</p>
   </form>
 </section>
@@ -122,10 +122,10 @@ nav.abas button.on{color:var(--azul)}
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
   </button>
   <h1 style="margin:12px 0 6px;font-size:26px;font-weight:800">Criar minha senha</h1>
-  <p style="margin:0 0 28px;font-size:15px;color:#B8C4D6;line-height:1.5">Use seu CPF e seu nome completo, igual ao cadastro na empresa.</p>
+  <p style="margin:0 0 28px;font-size:15px;color:#B8C4D6;line-height:1.5">Digite seu CPF e seu primeiro nome. Depois crie uma senha.</p>
   <form id="form-primeiro" style="display:flex;flex-direction:column;gap:18px">
     <div class="campo"><label for="pa-cpf">CPF</label><input id="pa-cpf" type="tel" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" required></div>
-    <div class="campo"><label for="pa-nome">Nome completo</label><input id="pa-nome" autocomplete="name" required></div>
+    <div class="campo"><label for="pa-nome">Seu primeiro nome</label><input id="pa-nome" autocomplete="given-name" placeholder="Ex.: Sidnei" required></div>
     <div class="campo"><label for="pa-senha">Crie uma senha (mínimo 6)</label><input id="pa-senha" type="password" autocomplete="new-password" minlength="6" required></div>
     <div class="campo"><label for="pa-senha2">Repita a senha</label><input id="pa-senha2" type="password" autocomplete="new-password" minlength="6" required></div>
     <div id="pa-erro" class="erro" role="alert"></div>

@@ -102,6 +102,13 @@ returns text language sql immutable as $$
   select regexp_replace(lower(extensions.unaccent(coalesce(t, ''))), '\s+', ' ', 'g');
 $$;
 
+-- primeiro acesso: basta o primeiro nome bater (sem acento, maiúscula ou espaço sobrando)
+create or replace function public.primeiro_nome_confere(cadastro text, digitado text)
+returns boolean language sql immutable set search_path = public, extensions as $$
+  select split_part(public.normaliza_nome(trim(cadastro)), ' ', 1) <> ''
+     and split_part(public.normaliza_nome(trim(cadastro)), ' ', 1) = split_part(public.normaliza_nome(trim(digitado)), ' ', 1);
+$$;
+
 -- registros não podem ser alterados nem apagados
 create or replace function public.bloqueia_alteracao()
 returns trigger language plpgsql as $$
@@ -127,8 +134,8 @@ begin
   if not found or not c.ativo then
     return json_build_object('ok', false, 'motivo', 'CPF não cadastrado. Fale com o RH.');
   end if;
-  if public.normaliza_nome(c.nome) <> public.normaliza_nome(trim(p_nome)) then
-    return json_build_object('ok', false, 'motivo', 'O nome não confere com o cadastro. Digite o nome completo.');
+  if not public.primeiro_nome_confere(c.nome, p_nome) then
+    return json_build_object('ok', false, 'motivo', 'O nome não confere com o cadastro. Digite seu primeiro nome.');
   end if;
   if c.user_id is not null then
     return json_build_object('ok', false, 'motivo', 'Este CPF já tem senha. Use "Entrar". Esqueceu? Fale com o RH.');
@@ -149,7 +156,7 @@ begin
   v_cpf := split_part(v_email, '@', 1);
   select * into c from public.colaboradores where cpf = v_cpf;
   if not found or not c.ativo
-     or public.normaliza_nome(c.nome) <> public.normaliza_nome(trim(p_nome)) then
+     or not public.primeiro_nome_confere(c.nome, p_nome) then
     return json_build_object('ok', false, 'motivo', 'Cadastro não confere. Fale com o RH.');
   end if;
   if c.user_id is not null and c.user_id <> auth.uid() then

@@ -432,6 +432,9 @@ function desenharBotoes() {
       <span class="t">Registrar ${NOMES[t].toLowerCase()}</span>
       ${i ? '' : `<span class="s">${g.ok ? 'confere seu rosto e grava a localização' : 'disponível quando estiver no posto'}</span>`}
     </button>`).join('');
+  if (!g.ok && !g.esperando && g.d != null) {
+    box.innerHTML += `<button class="btn-sec" style="height:auto;padding:12px 14px;line-height:1.4" onclick="abrirCamera('${p[0]}')">Estou no posto — tentar assim mesmo<br><span style="font-size:12.5px;font-weight:600;color:#4A5A70">o sistema confere e avisa o RH se der diferença</span></button>`;
+  }
 }
 
 // ---------- GPS ----------

@@ -81,6 +81,16 @@ No painel, a aba **Rondas** mostra, por período, quantas passagens teve cada po
 - Se o rosto **não conferir** (ou não for detectado), o ponto **é gravado mesmo assim**, mas fica marcado com alerta. No painel aparecem a etiqueta "Rosto não confere", o contador "Rosto a conferir hoje" e um ⚠ no espelho. Clicando no horário, você vê a selfie ao lado da foto de cadastro.
 - Para o colaborador refazer a foto de cadastro (trocou o visual, foto ruim): em Colaboradores, clique em **Refazer rosto**.
 
+## Ajuste de ponto pelo RH
+
+Marcação errada (ex.: bateu "intervalo" no lugar de "saída") ou esquecida: no painel, em **Espelho de ponto**, clique em **Ajustar** na linha do dia.
+- Em cada marcação, escolha **Trocar para** outro tipo ou **Desconsiderar**.
+- Use **Incluir marcação que faltou** para pôr um horário que o funcionário esqueceu de bater.
+- A **justificativa** é obrigatória.
+- A marcação original **nunca é apagada**. O ajuste fica registrado à parte, com quem fez e quando, e vale no espelho, no Excel (coluna "Ajustes do RH") e no espelho do funcionário, onde aparece como "(ajuste RH)". Os horários ajustados aparecem em roxo com ✎.
+- Errou o ajuste? Abra de novo e clique em **Anular ajuste**.
+- O AFD (fiscalização) continua com as marcações originais, como manda a Portaria 671.
+
 ## Como funciona o bloqueio
 
 Quem decide é o servidor, não o celular:

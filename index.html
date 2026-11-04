@@ -687,7 +687,8 @@ async function registrarRonda(codigo) {
 function agrupaJornadas(regs) {
   const jornadas = []; let atual = null;
   regs.forEach(r => {
-    if (r.tipo === 'entrada' || !atual) { atual = { inicio: r.registrado_em, marcas: [] }; jornadas.push(atual); }
+    const ult = atual && atual.marcas[atual.marcas.length - 1];
+    if (r.tipo === 'entrada' || !atual || (new Date(r.registrado_em) - new Date(ult.registrado_em)) > 10 * 3600e3) { atual = { inicio: r.registrado_em, marcas: [] }; jornadas.push(atual); }
     atual.marcas.push(r);
   });
   jornadas.forEach(j => {
@@ -716,14 +717,21 @@ async function carregarEspelho() {
   const { data, error } = await sb.from('registros').select('id,tipo,registrado_em,distancia_m')
     .gte('registrado_em', ini.toISOString()).lt('registrado_em', fim.toISOString()).order('registrado_em');
   if (error) { $('e-lista').innerHTML = '<p style="color:#8A3307">Não foi possível carregar.</p>'; return; }
-  const js = agrupaJornadas(data || []);
+  const { data: ajs } = await sb.from('ajustes').select('*').is('anulado_em', null);
+  const porReg = {}; (ajs || []).forEach(a => { if (a.registro_id) porReg[a.registro_id] = a; });
+  const efetivos = [];
+  (data || []).forEach(r => { const a = porReg[r.id]; if (a && a.acao === 'desconsiderar') return; efetivos.push(a && a.acao === 'alterar_tipo' ? { ...r, tipo: a.tipo, rh: true } : r); });
+  (ajs || []).filter(a => a.acao === 'incluir' && new Date(a.marcacao_em) >= ini && new Date(a.marcacao_em) < fim)
+    .forEach(a => efetivos.push({ tipo: a.tipo, registrado_em: a.marcacao_em, rh: true }));
+  efetivos.sort((x, y) => new Date(x.registrado_em) - new Date(y.registrado_em));
+  const js = agrupaJornadas(efetivos);
   $('e-dias').textContent = js.length;
   $('e-horas').textContent = fmtHoras(js.reduce((s, j) => s + j.ms, 0));
   $('e-bloq').textContent = js.filter(j => !j.completa).length;
   $('e-lista').innerHTML = js.length ? js.slice().reverse().map(j => {
     const d = new Date(j.inicio).toLocaleDateString('pt-BR', { timeZone: TZ, weekday: 'short', day: '2-digit', month: '2-digit' });
     return `<div class="dia"><div class="cab"><span>${d.charAt(0).toUpperCase() + d.slice(1)}</span><span style="font-size:13px;color:${j.completa ? '#0B6B43' : '#1D4ED8'}">${j.completa ? fmtHoras(j.ms) : 'Em aberto'}</span></div>
-      <div class="marcas">${j.marcas.map(m => `<span><span style="color:#4A5A70">${NOMES[m.tipo]}:</span> <b>${hora(m.registrado_em)}</b></span>`).join('')}</div></div>`;
+      <div class="marcas">${j.marcas.map(m => `<span><span style="color:#4A5A70">${NOMES[m.tipo]}:</span> <b>${hora(m.registrado_em)}</b>${m.rh ? ' <span style="color:#6D28D9;font-size:12px;font-weight:700">(ajuste RH)</span>' : ''}</span>`).join('')}</div></div>`;
   }).join('') : '<p style="color:#4A5A70">Nenhum registro neste mês.</p>';
 }
 

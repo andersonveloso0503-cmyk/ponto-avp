@@ -87,6 +87,9 @@ td .peq{font-size:12px;color:var(--cinza)}
 .imp table{min-width:640px}
 .imp td{font-size:13px;padding:8px 10px}
 .sem-local{display:inline-block;margin-top:4px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:800;background:var(--al-bg);color:var(--al)}
+.aj-sel{height:38px;border-radius:10px;border:1px solid #C9D2DE;padding:0 8px;font-size:14px;max-width:100%}
+.marca-rh{color:#6D28D9!important}
+.tag.rh{background:#EDE4FF;color:#5B21B6}
 .grupo td{background:#F3F5F8;font-weight:800;font-size:13px;color:var(--cinza);text-transform:uppercase;letter-spacing:.5px}
 .ronda-box{background:#fff;border-radius:16px;padding:20px;display:none;flex-direction:column;gap:14px;border:2px solid #C9D7F5}
 .ronda-box.on{display:flex}
@@ -159,7 +162,7 @@ td .peq{font-size:12px;color:var(--cinza)}
 
     <!-- ESPELHO -->
     <section id="sec-espelho" class="secao">
-      <div class="cab"><div><h1>Espelho de ponto</h1><p class="sub">Jornadas por colaborador e período. Clique num horário para ver a selfie e o local.</p></div></div>
+      <div class="cab"><div><h1>Espelho de ponto</h1><p class="sub">Jornadas por colaborador e período. Clique num horário para ver a selfie e o local. Marcação errada? Use <b>Ajustar</b> na linha do dia. Horários em <span style="color:#6D28D9;font-weight:800">roxo ✎</span> foram ajustados pelo RH.</p></div></div>
       <div class="form">
         <label>Colaborador<select id="esp-colab"><option value="">Todos</option></select></label>
         <label>Posto<select id="esp-posto"><option value="">Todos</option></select></label>
@@ -173,8 +176,8 @@ td .peq{font-size:12px;color:var(--cinza)}
         <span id="esp-total" class="sub" style="margin:0"></span>
       </div>
       <div class="caixa"><table>
-        <thead><tr><th>Data</th><th>Colaborador</th><th>Posto</th><th>Entrada</th><th>Saída int.</th><th>Volta int.</th><th>Saída</th><th>Horas</th></tr></thead>
-        <tbody id="esp-corpo"><tr><td colspan="8" class="vazio">Escolha o período e clique em Buscar.</td></tr></tbody>
+        <thead><tr><th>Data</th><th>Colaborador</th><th>Posto</th><th>Entrada</th><th>Saída int.</th><th>Volta int.</th><th>Saída</th><th>Horas</th><th></th></tr></thead>
+        <tbody id="esp-corpo"><tr><td colspan="9" class="vazio">Escolha o período e clique em Buscar.</td></tr></tbody>
       </table></div>
     </section>
 
@@ -304,6 +307,27 @@ td .peq{font-size:12px;color:var(--cinza)}
     <div id="m-rosto"></div>
     <div id="m-info"></div>
     <a id="m-mapa" class="btn sec" style="display:flex;align-items:center;justify-content:center;text-decoration:none" target="_blank" rel="noopener">Ver local no mapa</a>
+  </div>
+</div>
+
+<div id="aj" class="imp" onclick="if(event.target===this)fecharAjuste()">
+  <div class="box" role="dialog" aria-modal="true" aria-labelledby="aj-titulo" style="max-width:760px">
+    <div class="cab" style="align-items:center">
+      <div><h1 id="aj-titulo" style="font-size:21px">Ajustar ponto</h1><p id="aj-sub" class="sub"></p></div>
+      <button class="btn sec peq" onclick="fecharAjuste()">Fechar</button>
+    </div>
+    <div class="aviso" style="margin:0">A marcação original <b>nunca é apagada</b>. O ajuste fica registrado à parte, com a justificativa, quem fez e quando, e é ele que vale no espelho e no Excel.</div>
+    <div class="caixa" style="border:1px solid var(--borda)"><table style="min-width:520px">
+      <thead><tr><th>Hora</th><th>Registrado como</th><th>O que fazer</th></tr></thead>
+      <tbody id="aj-corpo"></tbody>
+    </table></div>
+    <div id="aj-incluidas"></div>
+    <div id="aj-novas" style="display:flex;flex-direction:column;gap:8px"></div>
+    <button class="btn sec" type="button" onclick="addInclusao()" style="align-self:flex-start">+ Incluir marcação que faltou</button>
+    <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--cinza)">Justificativa (obrigatória)
+      <textarea id="aj-just" rows="2" placeholder="Ex.: funcionária marcou saída para intervalo no lugar da saída" style="border-radius:10px;border:1px solid #C9D2DE;padding:10px 12px;font:inherit;font-size:14px;resize:vertical"></textarea></label>
+    <div id="aj-msg" class="erro" role="status"></div>
+    <div class="acoes" style="justify-content:flex-end"><button class="btn sec" onclick="fecharAjuste()">Cancelar</button><button class="btn" id="aj-ok" onclick="salvarAjuste()">Salvar ajuste</button></div>
   </div>
 </div>
 
@@ -491,7 +515,8 @@ function agrupaJornadas(regs) {
   Object.values(porColab).forEach(lista => {
     let atual = null;
     lista.forEach(r => {
-      if (r.tipo === 'entrada' || !atual) { atual = { colaborador_id: r.colaborador_id, posto_id: r.posto_id, inicio: r.registrado_em, marcas: {}, todas: [] }; js.push(atual); }
+      const ult = atual && atual.todas[atual.todas.length - 1];
+      if (r.tipo === 'entrada' || !atual || (new Date(r.registrado_em) - new Date(ult.registrado_em)) > 10 * 3600e3) { atual = { colaborador_id: r.colaborador_id, posto_id: r.posto_id, inicio: r.registrado_em, marcas: {}, todas: [] }; js.push(atual); }
       if (!atual.marcas[r.tipo]) atual.marcas[r.tipo] = r;
       atual.todas.push(r);
     });
@@ -521,19 +546,116 @@ async function buscarRegistrosPeriodo() {
   return todos;
 }
 
+// ---------- AJUSTES DO RH ----------
+const TIPOS = ['entrada', 'saida_intervalo', 'volta_intervalo', 'saida'];
+let espelhoAjustes = [], ajCtx = null;
+function aplicarAjustes(regs, ajs) {
+  const ativos = ajs.filter(a => !a.anulado_em), porReg = {};
+  ativos.forEach(a => { if (a.registro_id) porReg[a.registro_id] = a; });
+  const out = [];
+  regs.forEach(r => {
+    const a = porReg[r.id];
+    if (a && a.acao === 'desconsiderar') return;
+    if (a && a.acao === 'alterar_tipo') out.push({ ...r, tipo: a.tipo, tipoOriginal: r.tipo, ajuste: a });
+    else out.push(r);
+  });
+  ativos.filter(a => a.acao === 'incluir').forEach(a => out.push({ id: null, colaborador_id: a.colaborador_id, posto_id: a.posto_id, tipo: a.tipo, registrado_em: a.marcacao_em, ajuste: a, incluido: true }));
+  return out.sort((x, y) => new Date(x.registrado_em) - new Date(y.registrado_em));
+}
+async function buscarAjustes(colabId) {
+  let q = sb.from('ajustes').select('*').order('criado_em');
+  if (colabId) q = q.eq('colaborador_id', colabId);
+  const { data } = await q.limit(10000);
+  return data || [];
+}
+const descAjuste = m => m.ajuste.acao === 'incluir' ? `incluída pelo RH: ${m.ajuste.justificativa}` : `registrada como ${NOMES[m.tipoOriginal]}, ajustada pelo RH: ${m.ajuste.justificativa}`;
+const diaSP = d => new Date(d).toLocaleDateString('en-CA', { timeZone: TZ });
+
+async function abrirAjuste(colabId, dia) {
+  const c = colabPorId(colabId);
+  const ini = inicioDiaSP(dia), fim = new Date(ini.getTime() + 864e5);
+  const [r, a] = await Promise.all([
+    sb.from('registros').select('*').eq('colaborador_id', colabId).gte('registrado_em', ini.toISOString()).lt('registrado_em', fim.toISOString()).order('registrado_em'),
+    buscarAjustes(colabId)
+  ]);
+  ajCtx = { colabId, dia, regs: r.data || [], ajustes: a.filter(x => !x.anulado_em) };
+  $('aj-titulo').textContent = 'Ajustar ponto · ' + c.nome;
+  $('aj-sub').textContent = new Date(dia + 'T12:00:00-03:00').toLocaleDateString('pt-BR', { timeZone: TZ, weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }) + ' · ' + nomePosto(c.posto_id);
+  $('aj-just').value = ''; $('aj-novas').innerHTML = ''; msg('aj-msg');
+  desenharAjuste(); $('aj').classList.add('on');
+}
+function desenharAjuste() {
+  const porReg = {}; ajCtx.ajustes.forEach(a => { if (a.registro_id) porReg[a.registro_id] = a; });
+  const opc = TIPOS.map(t => `<option value="tipo:${t}">Trocar para: ${NOMES[t]}</option>`).join('');
+  $('aj-corpo').innerHTML = ajCtx.regs.length ? ajCtx.regs.map(r => {
+    const a = porReg[r.id];
+    const acao = a ? `<span class="tag rh">${a.acao === 'desconsiderar' ? 'Desconsiderada' : 'Trocada para ' + NOMES[a.tipo]}</span>
+        <div class="peq" style="margin-top:4px">${esc(a.justificativa)}</div><button class="btn sec peq" style="margin-top:6px" onclick="anularAjuste(${a.id})">Anular ajuste</button>`
+      : `<select class="aj-sel" data-reg="${r.id}"><option value="">Manter como está</option>${opc.replace(`value="tipo:${r.tipo}"`, `value="tipo:${r.tipo}" disabled`)}<option value="desc">Desconsiderar (não conta)</option></select>`;
+    return `<tr><td><button class="marca-h" onclick="verRegistro(${r.id})">${hora(r.registrado_em)}</button></td><td>${NOMES[r.tipo]}</td><td>${acao}</td></tr>`;
+  }).join('') : '<tr><td colspan="3" class="vazio">Nenhuma marcação feita pelo funcionário neste dia.</td></tr>';
+  const incl = ajCtx.ajustes.filter(a => a.acao === 'incluir' && diaSP(a.marcacao_em) === ajCtx.dia);
+  $('aj-incluidas').innerHTML = incl.length ? `<p style="margin:0 0 6px;font-size:14px;font-weight:700">Marcações incluídas pelo RH</p>` + incl.map(a =>
+    `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid #EEF1F5;font-size:14px"><span class="tag rh">${hora(a.marcacao_em)} · ${NOMES[a.tipo]}</span><span class="peq" style="flex:1">${esc(a.justificativa)}</span><button class="btn sec peq" onclick="anularAjuste(${a.id})">Anular</button></div>`).join('') : '';
+}
+function addInclusao() {
+  const d = document.createElement('div');
+  d.className = 'aj-nova'; d.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+  d.innerHTML = `<span style="font-size:14px;font-weight:700">Incluir:</span><select class="aj-sel">${TIPOS.map(t => `<option value="${t}">${NOMES[t]}</option>`).join('')}</select>
+    <input type="time" class="aj-sel" style="width:120px" aria-label="Horário"><button class="btn sec peq" type="button" onclick="this.parentNode.remove()">Remover</button>`;
+  $('aj-novas').appendChild(d);
+}
+async function salvarAjuste() {
+  msg('aj-msg');
+  const just = $('aj-just').value.trim(), c = colabPorId(ajCtx.colabId), linhas = [];
+  document.querySelectorAll('#aj-corpo select[data-reg]').forEach(sel => {
+    if (!sel.value) return;
+    const reg = +sel.dataset.reg;
+    if (sel.value === 'desc') linhas.push({ colaborador_id: ajCtx.colabId, acao: 'desconsiderar', registro_id: reg, justificativa: just });
+    else linhas.push({ colaborador_id: ajCtx.colabId, acao: 'alterar_tipo', registro_id: reg, tipo: sel.value.slice(5), justificativa: just });
+  });
+  for (const d of document.querySelectorAll('#aj-novas .aj-nova')) {
+    const [sel, t] = d.querySelectorAll('select, input');
+    if (!t.value) return msg('aj-msg', 'Informe o horário da marcação que vai incluir.');
+    linhas.push({ colaborador_id: ajCtx.colabId, acao: 'incluir', tipo: sel.value, marcacao_em: new Date(`${ajCtx.dia}T${t.value}:00-03:00`).toISOString(), posto_id: c.posto_id, justificativa: just });
+  }
+  if (!linhas.length) return msg('aj-msg', 'Nada para salvar: escolha o que fazer em alguma marcação ou inclua uma marcação.');
+  if (just.length < 5) return msg('aj-msg', 'Escreva a justificativa do ajuste.');
+  $('aj-ok').disabled = true;
+  const { error } = await sb.from('ajustes').insert(linhas);
+  $('aj-ok').disabled = false;
+  if (error) return msg('aj-msg', /ajustes_um_por_registro/.test(error.message) ? 'Essa marcação já tem um ajuste. Anule o anterior primeiro.' : 'Erro: ' + error.message);
+  fecharAjuste(); carregarEspelho();
+}
+async function anularAjuste(id) {
+  if (!confirm('Anular este ajuste? A marcação volta a valer como foi registrada pelo funcionário.')) return;
+  const { data, error } = await sb.rpc('anular_ajuste', { p_id: id });
+  if (error || !data.ok) return msg('aj-msg', 'Não foi possível anular.');
+  const a = await buscarAjustes(ajCtx.colabId); ajCtx.ajustes = a.filter(x => !x.anulado_em); desenharAjuste(); carregarEspelho();
+}
+function fecharAjuste() { $('aj').classList.remove('on'); }
+
 async function carregarEspelho() {
-  $('esp-corpo').innerHTML = '<tr><td colspan="8" class="vazio">Carregando…</td></tr>';
+  $('esp-corpo').innerHTML = '<tr><td colspan="9" class="vazio">Carregando…</td></tr>';
   const regs = await buscarRegistrosPeriodo(); if (!regs) return;
-  espelhoRegs = regs; espelhoJornadas = agrupaJornadas(regs);
+  const ini = inicioDiaSP($('esp-ini').value), fim = new Date(inicioDiaSP($('esp-fim').value).getTime() + 864e5);
+  const ajs = (await buscarAjustes($('esp-colab').value || null)).filter(a => a.acao !== 'incluir'
+    || (new Date(a.marcacao_em) >= ini && new Date(a.marcacao_em) < fim && (!$('esp-posto').value || String(a.posto_id) === $('esp-posto').value)));
+  espelhoAjustes = ajs;
+  espelhoRegs = regs; espelhoJornadas = agrupaJornadas(aplicarAjustes(regs, ajs));
   const tot = espelhoJornadas.reduce((s, j) => s + j.ms, 0);
   $('esp-total').textContent = `${espelhoJornadas.length} jornadas · ${fmtHoras(tot)} trabalhadas`;
-  const cel = m => m ? `<button class="marca-h" onclick="verRegistro(${m.id})" ${rostoAlerta(m) ? 'style="color:var(--al)" title="Rosto não confere"' : ''}>${hora(m.registrado_em)}${rostoAlerta(m) ? ' ⚠' : ''}</button>` : '<span style="color:#8C9AB0">—</span>';
+  const cel = (m, j) => !m ? '<span style="color:#8C9AB0">—</span>'
+    : m.ajuste ? `<button class="marca-h marca-rh" title="${esc(descAjuste(m))}" onclick="abrirAjuste(${j.colaborador_id}, '${diaSP(m.registrado_em)}')">${hora(m.registrado_em)} ✎</button>`
+    : `<button class="marca-h" onclick="verRegistro(${m.id})" ${rostoAlerta(m) ? 'style="color:var(--al)" title="Rosto não confere"' : ''}>${hora(m.registrado_em)}${rostoAlerta(m) ? ' ⚠' : ''}</button>`;
   $('esp-corpo').innerHTML = espelhoJornadas.length ? espelhoJornadas.map(j => {
     const c = colabPorId(j.colaborador_id);
+    const extra = j.todas.length > 4 ? `<div class="peq">${j.todas.length} marcações</div>` : '';
     return `<tr><td>${dataBR(j.inicio)}</td><td><b>${esc(c.nome)}</b></td><td>${esc(nomePosto(j.posto_id))}</td>
-      <td>${cel(j.marcas.entrada)}</td><td>${cel(j.marcas.saida_intervalo)}</td><td>${cel(j.marcas.volta_intervalo)}</td><td>${cel(j.marcas.saida)}</td>
-      <td>${j.completa ? '<b>' + fmtHoras(j.ms) + '</b>' : '<span class="tag ne">Em aberto</span>'}</td></tr>`;
-  }).join('') : '<tr><td colspan="8" class="vazio">Nenhum registro no período.</td></tr>';
+      <td>${cel(j.marcas.entrada, j)}</td><td>${cel(j.marcas.saida_intervalo, j)}</td><td>${cel(j.marcas.volta_intervalo, j)}</td><td>${cel(j.marcas.saida, j)}</td>
+      <td>${j.completa ? '<b>' + fmtHoras(j.ms) + '</b>' : '<span class="tag ne">Em aberto</span>'}${extra}</td>
+      <td><button class="btn sec peq" onclick="abrirAjuste(${j.colaborador_id}, '${diaSP(j.inicio)}')">Ajustar</button></td></tr>`;
+  }).join('') : '<tr><td colspan="9" class="vazio">Nenhum registro no período.</td></tr>';
 }
 
 function exportarEspelhoExcel() {
@@ -544,7 +666,8 @@ function exportarEspelhoExcel() {
     return { 'Data': dataBR(j.inicio), 'Colaborador': c.nome, 'CPF': fmtCpf(c.cpf), 'Função': c.funcao || '', 'Posto': nomePosto(j.posto_id),
       'Entrada': h(j.marcas.entrada), 'Saída intervalo': h(j.marcas.saida_intervalo), 'Volta intervalo': h(j.marcas.volta_intervalo), 'Saída': h(j.marcas.saida),
       'Horas': j.completa ? fmtHoras(j.ms) : 'em aberto', 'Horas (decimal)': j.completa ? +(j.ms / 3600e3).toFixed(2) : '',
-      'Rosto a conferir': j.todas.some(rostoAlerta) ? 'SIM' : '' };
+      'Rosto a conferir': j.todas.some(rostoAlerta) ? 'SIM' : '',
+      'Ajustes do RH': j.todas.filter(m => m.ajuste).map(m => `${hora(m.registrado_em)} ${NOMES[m.tipo]} (${descAjuste(m)})`).join('; ') };
   });
   // resumo por colaborador
   const resumo = {};

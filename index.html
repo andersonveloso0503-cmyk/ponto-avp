@@ -366,7 +366,7 @@ async function carregarHome() {
   // jornada
   const hoje = data.hoje || [];
   $('h-hoje').innerHTML = hoje.length
-    ? hoje.map(r => `<div class="item"><span>${NOMES[r.tipo]}</span><b>${hora(r.registrado_em)}</b></div>`).join('')
+    ? hoje.map(r => `<div class="item"><span>${NOMES[r.tipo]}${r.rh ? ' <span style="color:#6D28D9;font-size:12px;font-weight:700">(ajuste RH)</span>' : ''}</span><b>${hora(r.registrado_em)}</b></div>`).join('')
     : '<div class="item"><span style="color:#5B6B80">Nenhum registro na jornada atual</span></div>';
   if (!data.colaborador.ativo) erro('h-erro', 'Seu cadastro está inativo. Fale com o RH.');
   else if (!data.posto) erro('h-erro', 'Você ainda não foi ligado a um posto. Fale com o RH.');

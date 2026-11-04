@@ -285,6 +285,7 @@ nav.abas button.on{color:var(--azul)}
 const CFG = window.PONTO_CONFIG;
 const sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
 const TZ = 'America/Sao_Paulo';
+const BOTAO = { entrada: 'Registrar entrada', saida_intervalo: 'Sair para o intervalo', volta_intervalo: 'Voltar do intervalo', saida: 'Encerrar o dia (saída)' };
 const NOMES = { entrada: 'Entrada', saida_intervalo: 'Saída p/ intervalo', volta_intervalo: 'Volta do intervalo', saida: 'Saída' };
 const PRECISAO_MAX = 200;
 
@@ -429,7 +430,7 @@ function desenharBotoes() {
   const p = status.permitidos || ['entrada'];
   box.innerHTML = p.map((t, i) => `
     <button class="btn-ponto ${i ? 'sec' : ''}" ${g.ok ? '' : 'disabled'} onclick="abrirCamera('${t}')">
-      <span class="t">Registrar ${NOMES[t].toLowerCase()}</span>
+      <span class="t">${BOTAO[t]}</span>
       ${i ? '' : `<span class="s">${g.ok ? 'confere seu rosto e grava a localização' : 'disponível quando estiver no posto'}</span>`}
     </button>`).join('');
   if (!g.ok && !g.esperando && g.d != null) {

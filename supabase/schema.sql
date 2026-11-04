@@ -188,15 +188,23 @@ $$;
 -- quais tipos de registro são permitidos agora, a partir do último registro
 create or replace function public.tipos_permitidos(p_colab bigint)
 returns text[] language plpgsql stable security definer set search_path = public, extensions as $$
-declare ult public.registros;
+declare ult public.registros; v_gap interval;
 begin
   select * into ult from public.registros
    where colaborador_id = p_colab order by registrado_em desc limit 1;
-  if not found or ult.tipo = 'saida' or now() - ult.registrado_em > interval '16 hours' then
+  if not found then
+    return array['entrada'];
+  end if;
+  v_gap := now() - ult.registrado_em;
+  if ult.tipo = 'saida' or v_gap > interval '16 hours' then
     return array['entrada'];
   elsif ult.tipo = 'saida_intervalo' then
+    -- intervalo não passa de algumas horas: se passou de 10h, esqueceram a saída — começa nova jornada
+    if v_gap > interval '10 hours' then return array['entrada']; end if;
     return array['volta_intervalo'];
-  else  -- entrada ou volta_intervalo
+  elsif ult.tipo = 'volta_intervalo' then
+    return array['saida', 'saida_intervalo'];   -- depois do intervalo, o normal é encerrar o dia
+  else  -- entrada
     return array['saida_intervalo', 'saida'];
   end if;
 end;
@@ -480,6 +488,13 @@ begin
   select * into p from public.postos where id = c.posto_id;
   select max(e.registrado_em) into v_ini from public.registros e
    where e.colaborador_id = c.id and e.tipo = 'entrada' and e.registrado_em > now() - interval '18 hours';
+  if v_ini is null and not ('entrada' = any(public.tipos_permitidos(c.id))) then
+    -- jornada sem 'entrada' (ex.: começou por engano com volta do intervalo): mostra desde a última saída
+    select min(e.registrado_em) into v_ini from public.registros e
+     where e.colaborador_id = c.id and e.registrado_em > now() - interval '12 hours'
+       and e.registrado_em > coalesce((select max(x.registrado_em) from public.registros x
+                                        where x.colaborador_id = c.id and x.tipo = 'saida'), '-infinity'::timestamptz);
+  end if;
   return json_build_object(
     'ok', true,
     'colaborador', json_build_object('id', c.id, 'nome', c.nome, 'funcao', c.funcao, 'ativo', c.ativo,

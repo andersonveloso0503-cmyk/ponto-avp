@@ -10,6 +10,9 @@ window.PONTO_CONFIG = {
   // link do app do colaborador (usado nos QR Codes). Deixe vazio para usar o mesmo endereço do painel.
   APP_URL: '',
 
+  // chave pública dos avisos no celular (a privada fica guardada no Supabase)
+  VAPID_PUBLICA: 'BCJFX4LcqodWhwBRroKu6cU1buR-rpe1OCjGmjI7bebf5vFPeuB2vecT9HcvkLlwU_dmGd8GhwXFGA-pOJN7ooQ',
+
   // não mude depois de começar a usar (é o "e-mail" interno do login por CPF)
   EMAIL_DOMINIO: 'ponto.avpterceirizacao.com.br',
 

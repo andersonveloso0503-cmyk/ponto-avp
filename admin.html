@@ -90,6 +90,11 @@ td .peq{font-size:12px;color:var(--cinza)}
 .aj-sel{height:38px;border-radius:10px;border:1px solid #C9D2DE;padding:0 8px;font-size:14px;max-width:100%}
 .marca-rh{color:#6D28D9!important}
 .tag.rh{background:#EDE4FF;color:#5B21B6}
+body.fiscal .so-admin{display:none!important}
+.card-av{background:#fff;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.card-av h2{margin:0;font-size:18px;font-weight:800}
+.lin-av{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid #EEF1F5;font-size:14px}
+.lin-av:last-child{border-bottom:0}
 .grupo td{background:#F3F5F8;font-weight:800;font-size:13px;color:var(--cinza);text-transform:uppercase;letter-spacing:.5px}
 .ronda-box{background:#fff;border-radius:16px;padding:20px;display:none;flex-direction:column;gap:14px;border:2px solid #C9D7F5}
 .ronda-box.on{display:flex}
@@ -130,9 +135,10 @@ td .peq{font-size:12px;color:var(--cinza)}
     <button data-sec="espelho">Espelho de ponto</button>
     <button data-sec="colab">Colaboradores</button>
     <button data-sec="postos">Postos e raio GPS</button>
-    <button data-sec="qr">QR Codes da ronda</button>
+    <button data-sec="qr" class="so-admin">QR Codes da ronda</button>
     <button data-sec="rondas">Rondas</button>
     <button data-sec="bloq">Tentativas bloqueadas</button>
+    <button data-sec="avisos">Avisos e fiscais</button>
     <button class="sair" onclick="sair()">Sair</button>
   </aside>
   <main>
@@ -189,11 +195,11 @@ td .peq{font-size:12px;color:var(--cinza)}
           <label for="colab-posto" style="position:absolute;left:-9999px">Filtrar por posto</label>
           <select id="colab-posto" onchange="desenharColab()"><option value="">Todos os postos</option></select>
           <input id="colab-busca" placeholder="Buscar nome ou CPF" oninput="desenharColab()" aria-label="Buscar colaborador">
-          <label class="btn sec" style="display:inline-flex;align-items:center;cursor:pointer">Importar planilha<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importarColab(this)"></label>
+          <label class="btn sec so-admin" style="display:inline-flex;align-items:center;cursor:pointer">Importar planilha<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importarColab(this)"></label>
         </div>
       </div>
-      <div class="aviso"><b>Importar planilha:</b> pode mandar do jeito que estiver, com as colunas em qualquer ordem e com outros títulos. O painel acha sozinho o nome, CPF, função, posto e empresa, confere os CPFs e mostra uma prévia antes de gravar. Quem já está cadastrado (mesmo CPF) é atualizado.</div>
-      <form id="form-colab" class="form" onsubmit="salvarColab(event)">
+      <div class="aviso so-admin"><b>Importar planilha:</b> pode mandar do jeito que estiver, com as colunas em qualquer ordem e com outros títulos. O painel acha sozinho o nome, CPF, função, posto e empresa, confere os CPFs e mostra uma prévia antes de gravar. Quem já está cadastrado (mesmo CPF) é atualizado.</div>
+      <form id="form-colab" class="form so-admin" onsubmit="salvarColab(event)">
         <input type="hidden" id="c-id">
         <label>CPF<input id="c-cpf" inputmode="numeric" required></label>
         <label>Nome completo<input id="c-nome" required></label>
@@ -201,6 +207,10 @@ td .peq{font-size:12px;color:var(--cinza)}
         <label>Empresa<input id="c-empresa" placeholder="AVP, TRI…"></label>
         <label>Posto<select id="c-posto"><option value="">— sem posto —</option></select></label>
         <label>Situação<select id="c-ativo"><option value="true">Ativo</option><option value="false">Inativo (bloqueado)</option></select></label>
+        <label>Horário de entrada<input id="c-hora" type="time"></label>
+        <label>Escala<select id="c-escala" onchange="$('c-ref-wrap').style.display = this.value === '12x36' ? 'flex' : 'none'">
+          <option value="">— sem aviso de atraso —</option><option value="seg-sex">Segunda a sexta</option><option value="seg-sab">Segunda a sábado</option><option value="todos">Todos os dias</option><option value="12x36">12x36 (dia sim, dia não)</option></select></label>
+        <label id="c-ref-wrap" style="display:none">Um dia em que ele trabalha<input id="c-ref" type="date"></label>
         <div class="acoes"><button class="btn" type="submit" id="c-salvar">Adicionar</button><button class="btn sec" type="button" onclick="limparColab()">Limpar</button></div>
       </form>
       <div id="colab-msg" class="erro" role="status"></div>
@@ -213,8 +223,8 @@ td .peq{font-size:12px;color:var(--cinza)}
     <!-- POSTOS -->
     <section id="sec-postos" class="secao">
       <div class="cab"><div><h1>Postos e raio GPS</h1><p class="sub">O ponto só é aceito dentro do raio do posto do colaborador.</p></div></div>
-      <div class="aviso"><b>Como marcar o local:</b> digite o endereço do posto e clique em <b>Localizar</b>. Escolha o resultado certo e confira no mapa: se o pino não estiver exatamente no prédio, <b>clique no lugar certo do mapa</b> ou arraste o pino. O círculo azul mostra até onde o ponto é aceito.</div>
-      <form id="form-posto" class="form" onsubmit="salvarPosto(event)">
+      <div class="aviso so-admin"><b>Como marcar o local:</b> digite o endereço do posto e clique em <b>Localizar</b>. Escolha o resultado certo e confira no mapa: se o pino não estiver exatamente no prédio, <b>clique no lugar certo do mapa</b> ou arraste o pino. O círculo azul mostra até onde o ponto é aceito.</div>
+      <form id="form-posto" class="form so-admin" onsubmit="salvarPosto(event)">
         <input type="hidden" id="p-id">
         <label>Nome do posto<input id="p-nome" required placeholder="Carrara"></label>
         <label class="span-todo">Endereço do posto
@@ -281,6 +291,41 @@ td .peq{font-size:12px;color:var(--cinza)}
         <thead><tr><th>Data e hora</th><th>Colaborador</th><th>Posto</th><th>Ponto</th><th>Distância</th><th>Local</th></tr></thead>
         <tbody id="ro-corpo"></tbody>
       </table></div>
+    </section>
+
+    <!-- AVISOS E FISCAIS -->
+    <section id="sec-avisos" class="secao">
+      <div class="cab"><div><h1>Avisos e fiscais</h1><p class="sub">Aviso no celular quando um funcionário passa do horário e não bate a entrada.</p></div></div>
+      <div class="card-av">
+        <h2>Avisos neste celular</h2>
+        <p id="av-status" class="sub" style="margin:0">Verificando…</p>
+        <div class="acoes"><button class="btn" id="av-ativar" onclick="ativarAvisos()">Ativar avisos neste celular</button>
+          <button class="btn sec" onclick="testarAviso()">Enviar aviso de teste</button>
+          <button class="btn sec" id="av-desativar" onclick="desativarAvisos()" style="display:none">Desativar</button></div>
+        <div id="av-msg" class="erro" role="status"></div>
+      </div>
+      <div class="card-av so-admin">
+        <h2>Como funciona</h2>
+        <p class="sub" style="margin:0;line-height:1.5">A cada 5 minutos o sistema confere quem tem <b>horário de entrada e escala</b> cadastrados (em Colaboradores › Editar) e ainda não bateu o ponto depois da tolerância. Cada fiscal com avisos ativados recebe <b>um aviso por funcionário por dia</b>. Se forem mais de 3 ao mesmo tempo, chega um aviso só com a lista.</p>
+        <div class="lin-av"><span id="av-cobertura" style="flex:1"></span></div>
+        <form class="acoes" onsubmit="salvarTolerancia(event)"><label style="display:flex;gap:8px;align-items:center;font-size:14px;font-weight:600">Tolerância <input id="av-tol" type="number" min="0" max="120" style="width:90px"> minutos</label><button class="btn sec" type="submit">Salvar</button></form>
+      </div>
+      <div class="card-av so-admin">
+        <h2>Fiscais</h2>
+        <p class="sub" style="margin:0">O fiscal entra neste mesmo painel com e-mail e senha. Ele <b>vê tudo</b> (hoje, espelho, rondas, bloqueios) mas <b>não altera</b> cadastros, postos nem ajustes.</p>
+        <div id="av-fiscais"></div>
+        <form class="form" style="padding:0" onsubmit="criarFiscal(event)">
+          <label>Nome<input id="f-nome" required></label>
+          <label>E-mail<input id="f-email" type="email" required autocomplete="off"></label>
+          <label>Senha (mín. 6)<input id="f-senha" type="text" minlength="6" required autocomplete="off"></label>
+          <button class="btn" type="submit">Criar acesso de fiscal</button>
+        </form>
+        <div id="f-msg" class="erro" role="status"></div>
+      </div>
+      <div class="card-av">
+        <h2>Avisos enviados hoje</h2>
+        <div id="av-hoje"></div>
+      </div>
     </section>
 
     <!-- BLOQUEIOS -->
@@ -375,6 +420,8 @@ const inicioDiaSP = ymd => new Date(ymd + 'T00:00:00-03:00');
 const fmtHoras = ms => { const m = Math.round(ms / 60000); return Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0'); };
 function msg(id, t, ok) { const e = $(id); e.textContent = t || ''; e.style.display = t ? 'block' : 'none'; e.style.background = ok ? 'var(--ok-bg)' : ''; e.style.color = ok ? 'var(--ok)' : ''; }
 
+let meuPapel = 'admin', configs = {}, bancoComAvisos = true;
+const ESCALAS = { 'seg-sex': 'Seg a Sex', 'seg-sab': 'Seg a Sáb', 'todos': 'Todos os dias', '12x36': '12x36' };
 let pontosRonda = [], rondaPostoId = null, rondasLista = [];
 let postos = [], colabs = [], regsHoje = [], bloqHoje = [], espelhoJornadas = [], espelhoRegs = [];
 
@@ -391,8 +438,16 @@ async function iniciar() {
   if (CFG.SUPABASE_URL.includes('SEU-PROJETO')) { $('login').classList.add('on'); return msg('l-erro', 'Preencha o config.js com os dados do Supabase.'); }
   const { data: s } = await sb.auth.getSession();
   if (!s.session) { $('login').classList.add('on'); return; }
-  const { data: adm } = await sb.from('admins').select('user_id').eq('user_id', s.session.user.id).maybeSingle();
-  if (!adm) { await sb.auth.signOut(); $('login').classList.add('on'); return msg('l-erro', 'Este usuário não é administrador do ponto.'); }
+  let { data: adm, error: eAdm } = await sb.from('admins').select('user_id,papel').eq('user_id', s.session.user.id).maybeSingle();
+  if (eAdm) { // banco ainda sem a atualização dos avisos: funciona no modo antigo
+    bancoComAvisos = false;
+    ({ data: adm } = await sb.from('admins').select('user_id').eq('user_id', s.session.user.id).maybeSingle());
+    document.querySelectorAll('[data-sec="avisos"], #c-hora, #c-escala').forEach(el => (el.closest('label') || el).style.display = 'none');
+  }
+  if (!adm) { await sb.auth.signOut(); $('login').classList.add('on'); return msg('l-erro', 'Este usuário não tem acesso ao painel do ponto.'); }
+  meuPapel = adm.papel || 'admin';
+  document.body.classList.toggle('fiscal', meuPapel === 'fiscal');
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   $('login').classList.remove('on'); $('app').classList.add('on');
   const h = hojeSP(), d = new Date(h + 'T12:00:00-03:00');
   $('esp-fim').value = h;
@@ -405,7 +460,7 @@ async function iniciar() {
 document.querySelectorAll('aside button[data-sec]').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('aside button[data-sec]').forEach(x => x.classList.toggle('on', x === b));
   document.querySelectorAll('.secao').forEach(s => s.classList.toggle('on', s.id === 'sec-' + b.dataset.sec));
-  ({ hoje: carregarHoje, colab: desenharColab, postos: () => { desenharPostos(); iniciarMapa(); }, rondas: null, bloq: carregarBloq })[b.dataset.sec]?.();
+  ({ hoje: carregarHoje, colab: desenharColab, postos: () => { desenharPostos(); if (meuPapel === 'admin') iniciarMapa(); }, rondas: null, bloq: carregarBloq, avisos: carregarAvisos })[b.dataset.sec]?.();
 }));
 
 async function carregarBase() {
@@ -415,6 +470,7 @@ async function carregarBase() {
     sb.from('pontos_ronda').select('*').order('ordem').order('nome')
   ]);
   postos = p.data || []; colabs = c.data || []; pontosRonda = r.data || [];
+  { const { data: cf } = await sb.from('config').select('*'); configs = Object.fromEntries((cf || []).map(x => [x.chave, x.valor])); }
   const opcPostos = postos.map(x => `<option value="${x.id}">${esc(x.nome)}</option>`).join('');
   $('hoje-posto').innerHTML = '<option value="">Todos os postos</option>' + opcPostos;
   $('esp-posto').innerHTML = '<option value="">Todos</option>' + opcPostos;
@@ -468,7 +524,13 @@ function desenharHoje() {
     if (jornadaAberta && ult.tipo === 'saida_intervalo') { sit = 'Intervalo'; cls = 'ne'; inter++; ordem = 1; }
     else if (jornadaAberta) { sit = 'Trabalhando'; cls = 'ok'; trab++; ordem = 0; }
     else if (temHoje) { sit = 'Encerrou'; cls = 'ne'; ordem = 2; }
-    else { sit = 'Sem registro'; cls = 'al'; sem++; ordem = 3; }
+    else {
+      const pv = previstoHoje(c);
+      if (pv === 'folga') { sit = 'Folga'; cls = 'ne'; ordem = 4; }
+      else if (pv && Date.now() >= pv.getTime() + (+configs.tolerancia_min || 15) * 60000) { sit = 'Atrasado · ' + hora(pv); cls = 'al'; sem++; ordem = 2.5; }
+      else if (pv) { sit = 'Entra às ' + hora(pv); cls = 'ne'; ordem = 3.5; }
+      else { sit = 'Sem registro'; cls = 'al'; sem++; ordem = 3; }
+    }
     return { c, ult, sit, cls, ordem };
   }).sort((a, b) => a.ordem - b.ordem || a.c.nome.localeCompare(b.c.nome));
   $('k-trab').textContent = trab; $('k-int').textContent = inter; $('k-sem').textContent = sem;
@@ -654,7 +716,7 @@ async function carregarEspelho() {
     return `<tr><td>${dataBR(j.inicio)}</td><td><b>${esc(c.nome)}</b></td><td>${esc(nomePosto(j.posto_id))}</td>
       <td>${cel(j.marcas.entrada, j)}</td><td>${cel(j.marcas.saida_intervalo, j)}</td><td>${cel(j.marcas.volta_intervalo, j)}</td><td>${cel(j.marcas.saida, j)}</td>
       <td>${j.completa ? '<b>' + fmtHoras(j.ms) + '</b>' : '<span class="tag ne">Em aberto</span>'}${extra}</td>
-      <td><button class="btn sec peq" onclick="abrirAjuste(${j.colaborador_id}, '${diaSP(j.inicio)}')">Ajustar</button></td></tr>`;
+      <td><button class="btn sec peq so-admin" onclick="abrirAjuste(${j.colaborador_id}, '${diaSP(j.inicio)}')">Ajustar</button></td></tr>`;
   }).join('') : '<tr><td colspan="9" class="vazio">Nenhum registro no período.</td></tr>';
 }
 
@@ -730,8 +792,8 @@ function desenharColab() {
     grupoAtual = g;
     return cab + `<tr>
     <td style="min-width:200px"><b>${esc(c.nome)}</b>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn sec peq" onclick="editarColab(${c.id})">Editar</button>${c.user_id ? `<button class="btn sec peq" onclick="resetarAcesso(${c.id})">Esqueceu a senha</button>` : ''}${c.face_ref ? `<button class="btn sec peq" onclick="refazerRosto(${c.id})">Refazer rosto</button>` : ''}</div></td>
-    <td>${fmtCpf(c.cpf)}</td><td>${esc(c.funcao || '')}${c.empresa ? `<div class="peq">${esc(c.empresa)}</div>` : ''}</td><td>${esc(nomePosto(c.posto_id))}</td>
+      <div class="so-admin" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn sec peq" onclick="editarColab(${c.id})">Editar</button>${c.user_id ? `<button class="btn sec peq" onclick="resetarAcesso(${c.id})">Esqueceu a senha</button>` : ''}${c.face_ref ? `<button class="btn sec peq" onclick="refazerRosto(${c.id})">Refazer rosto</button>` : ''}</div></td>
+    <td>${fmtCpf(c.cpf)}</td><td>${esc(c.funcao || '')}${c.empresa ? `<div class="peq">${esc(c.empresa)}</div>` : ''}${c.hora_entrada ? `<div class="peq">Entrada ${c.hora_entrada.slice(0, 5)} · ${ESCALAS[c.escala] || ''}</div>` : ''}</td><td>${esc(nomePosto(c.posto_id))}</td>
     <td>${c.user_id ? '<span class="tag ok">Com senha</span>' : '<span class="tag ne">Não acessou</span>'}<div style="margin-top:4px">${c.face_ref ? '<span class="tag ok">Rosto cadastrado</span>' : '<span class="tag ne">Rosto pendente</span>'}</div></td>
     <td>${c.ativo ? '<span class="tag ok">Ativo</span>' : '<span class="tag al">Inativo</span>'}</td>
     </tr>`; }).join('')
@@ -740,16 +802,20 @@ function desenharColab() {
 function editarColab(id) {
   const c = colabPorId(id);
   $('c-id').value = c.id; $('c-cpf').value = fmtCpf(c.cpf); $('c-nome').value = c.nome; $('c-funcao').value = c.funcao || ''; $('c-empresa').value = c.empresa || '';
+  $('c-hora').value = c.hora_entrada ? c.hora_entrada.slice(0, 5) : ''; $('c-escala').value = c.escala || ''; $('c-ref').value = c.escala_ref || ''; $('c-ref-wrap').style.display = c.escala === '12x36' ? 'flex' : 'none';
   $('c-posto').value = c.posto_id || ''; $('c-ativo').value = String(c.ativo); $('c-salvar').textContent = 'Salvar alterações';
   $('form-colab').scrollIntoView({ behavior: 'smooth' });
 }
-function limparColab() { $('form-colab').reset(); $('c-id').value = ''; $('c-salvar').textContent = 'Adicionar'; }
+function limparColab() { $('form-colab').reset(); $('c-id').value = ''; $('c-salvar').textContent = 'Adicionar'; $('c-ref-wrap').style.display = 'none'; }
 async function salvarColab(e) {
   e.preventDefault(); msg('colab-msg');
   const cpf = soDig($('c-cpf').value);
   if (cpf.length !== 11) return msg('colab-msg', 'CPF precisa ter 11 números.');
   const reg = { cpf, nome: $('c-nome').value.trim().toUpperCase(), funcao: $('c-funcao').value.trim() || null, empresa: $('c-empresa').value.trim().toUpperCase() || null,
+    ...(bancoComAvisos ? { hora_entrada: $('c-hora').value || null, escala: $('c-escala').value || null, escala_ref: $('c-escala').value === '12x36' ? ($('c-ref').value || null) : null } : {}),
     posto_id: $('c-posto').value ? +$('c-posto').value : null, ativo: $('c-ativo').value === 'true' };
+  if (reg.escala && !reg.hora_entrada) return msg('colab-msg', 'Informe o horário de entrada para a escala.');
+  if (reg.escala === '12x36' && !reg.escala_ref) return msg('colab-msg', 'Na escala 12x36, informe um dia em que ele trabalha.');
   const id = $('c-id').value;
   const { error } = id ? await sb.from('colaboradores').update(reg).eq('id', id) : await sb.from('colaboradores').insert(reg);
   if (error) return msg('colab-msg', /duplicate/.test(error.message) ? 'Já existe colaborador com esse CPF.' : error.message);
@@ -939,7 +1005,7 @@ function desenharPostos() {
   const lista = postos.slice().sort((a, b) => ((a.lat == null ? 0 : 1) - (b.lat == null ? 0 : 1)) || a.nome.localeCompare(b.nome));
   $('postos-corpo').innerHTML = lista.length ? lista.map(p => `<tr>
     <td style="min-width:190px"><b>${esc(p.nome)}</b>${p.lat == null ? '<br><span class="sem-local">SEM LOCAL · ponto bloqueado</span>' : ''}
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn peq" onclick="abrirRondaBox(${p.id})">QR da ronda</button><button class="btn sec peq" onclick="editarPosto(${p.id})">Editar</button></div></td>
+      <div class="so-admin" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn peq" onclick="abrirRondaBox(${p.id})">QR da ronda</button><button class="btn sec peq" onclick="editarPosto(${p.id})">Editar</button></div></td>
     <td>${esc(p.endereco || '')}</td>
     <td>${p.lat == null ? `<button class="btn peq" onclick="editarPosto(${p.id})">Marcar no mapa</button>` : `<a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" rel="noopener">${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</a>`}</td>
     <td>${p.raio_m} m</td><td>${colabs.filter(c => c.posto_id === p.id && c.ativo).length}</td>
@@ -1073,6 +1139,103 @@ function exportarRondasExcel() {
   ws['!cols'] = [{ wch: 11 }, { wch: 7 }, { wch: 36 }, { wch: 22 }, { wch: 24 }, { wch: 13 }, { wch: 44 }];
   XLSX.utils.book_append_sheet(wb, ws, 'Rondas');
   XLSX.writeFile(wb, `rondas_${$('ro-ini').value}_a_${$('ro-fim').value}.xlsx`);
+}
+
+// ---------- AVISOS (push) ----------
+function trabalhaNoDia(c, ymd) {
+  const d = new Date(ymd + 'T12:00:00-03:00'), dow = d.getUTCDay(); // 0 = domingo
+  switch (c.escala) {
+    case 'seg-sex': return dow >= 1 && dow <= 5;
+    case 'seg-sab': return dow >= 1 && dow <= 6;
+    case 'todos': return true;
+    case '12x36': return !!c.escala_ref && Math.round((new Date(ymd + 'T12:00:00Z') - new Date(c.escala_ref + 'T12:00:00Z')) / 864e5) % 2 === 0;
+    default: return null;
+  }
+}
+function previstoHoje(c) {
+  if (!c.hora_entrada || !c.escala) return null;
+  const h = hojeSP(), t = trabalhaNoDia(c, h);
+  if (!t) return 'folga';
+  return new Date(`${h}T${c.hora_entrada.slice(0, 5)}:00-03:00`);
+}
+const b64ParaBytes = s => { const p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, ch => ch.charCodeAt(0)); };
+async function inscricaoAtual() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+  const reg = await navigator.serviceWorker.getRegistration('sw.js') || await navigator.serviceWorker.register('sw.js');
+  return reg.pushManager.getSubscription();
+}
+async function atualizarStatusAvisos() {
+  if (!('PushManager' in window) || !('Notification' in window)) { $('av-status').textContent = 'Este navegador não recebe avisos. No celular Android, use o Chrome.'; $('av-ativar').disabled = true; return; }
+  const sub = await inscricaoAtual().catch(() => null);
+  const negado = Notification.permission === 'denied';
+  $('av-status').innerHTML = negado ? '<b style="color:var(--al)">Avisos bloqueados neste navegador.</b> Libere em Configurações do site › Notificações › Permitir, e toque em Ativar de novo.'
+    : sub ? '<b style="color:var(--ok)">Ativado.</b> Este celular recebe os avisos de atraso.' : 'Desativado neste celular.';
+  $('av-ativar').style.display = sub ? 'none' : ''; $('av-desativar').style.display = sub ? '' : 'none';
+}
+async function ativarAvisos() {
+  msg('av-msg');
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return msg('av-msg', 'Você precisa tocar em Permitir para receber os avisos.');
+    const reg = await navigator.serviceWorker.register('sw.js'); await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ParaBytes(CFG.VAPID_PUBLICA) });
+    const j = sub.toJSON(), { data: u } = await sb.auth.getUser();
+    const { error } = await sb.from('push_inscricoes').upsert({ user_id: u.user.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, aparelho: navigator.userAgent.slice(0, 200) }, { onConflict: 'endpoint' });
+    if (error) throw error;
+    msg('av-msg', 'Avisos ativados! Toque em "Enviar aviso de teste" para conferir.', true);
+  } catch (e) { msg('av-msg', 'Não foi possível ativar: ' + (e.message || e)); }
+  atualizarStatusAvisos();
+}
+async function desativarAvisos() {
+  const sub = await inscricaoAtual();
+  if (sub) { await sb.from('push_inscricoes').delete().eq('endpoint', sub.endpoint); await sub.unsubscribe(); }
+  msg('av-msg', 'Avisos desativados neste celular.', true); atualizarStatusAvisos();
+}
+async function chamarAvisos(corpo) {
+  const { data, error } = await sb.functions.invoke('avisos', { body: corpo });
+  if (error) { let m = error.message; try { m = (await error.context.json()).motivo || m; } catch (e) {} return { ok: false, motivo: m }; }
+  return data;
+}
+async function testarAviso() {
+  msg('av-msg', 'Enviando…', true);
+  const r = await chamarAvisos({ acao: 'teste' });
+  msg('av-msg', r.ok ? 'Aviso de teste enviado. Deve chegar em alguns segundos.' : (r.motivo || 'Não foi possível enviar.'), r.ok);
+}
+async function carregarAvisos() {
+  atualizarStatusAvisos();
+  const h = hojeSP();
+  const { data: av } = await sb.from('avisos_enviados').select('*').eq('dia', h).order('enviado_em', { ascending: false });
+  $('av-hoje').innerHTML = (av || []).length ? av.map(a => { const c = colabPorId(a.colaborador_id);
+    const bateu = regsHoje.find(r => r.colaborador_id === a.colaborador_id && new Date(r.registrado_em) >= new Date(a.previsto) - 3 * 3600e3);
+    return `<div class="lin-av"><b style="flex:1">${esc(c.nome || '—')}</b><span class="peq">${esc(nomePosto(c.posto_id))} · horário ${hora(a.previsto)} · aviso ${hora(a.enviado_em)}</span>${bateu ? `<span class="tag ok">Bateu ${hora(bateu.registrado_em)}</span>` : '<span class="tag al">Sem entrada</span>'}</div>`; }).join('')
+    : '<p class="sub" style="margin:0">Nenhum aviso hoje.</p>';
+  if (meuPapel !== 'admin') return;
+  const ativos = colabs.filter(c => c.ativo), com = ativos.filter(c => c.hora_entrada && c.escala).length;
+  $('av-cobertura').innerHTML = `<b>${com} de ${ativos.length}</b> funcionários com horário e escala cadastrados.` + (com < ativos.length ? ' Quem não tem horário não gera aviso.' : '');
+  $('av-tol').value = configs.tolerancia_min || 15;
+  const { data: g } = await sb.from('admins').select('*').order('papel');
+  $('av-fiscais').innerHTML = (g || []).filter(x => x.papel === 'fiscal').map(f => `<div class="lin-av"><b style="flex:1">${esc(f.nome || '')}</b><span class="peq">${esc(f.email || '')}</span><button class="btn sec peq" onclick="removerFiscal('${f.user_id}', '${esc(f.nome || '')}')">Remover acesso</button></div>`).join('')
+    || '<p class="sub" style="margin:0">Nenhum fiscal cadastrado ainda.</p>';
+}
+async function salvarTolerancia(e) {
+  e.preventDefault();
+  const v = Math.max(0, Math.min(120, +$('av-tol').value || 0));
+  const { error } = await sb.from('config').upsert({ chave: 'tolerancia_min', valor: String(v) });
+  if (error) return msg('av-msg', error.message);
+  configs.tolerancia_min = String(v); msg('av-msg', `Tolerância salva: ${v} minutos.`, true);
+}
+async function criarFiscal(e) {
+  e.preventDefault(); msg('f-msg', 'Criando…', true);
+  const r = await chamarAvisos({ acao: 'criar_fiscal', nome: $('f-nome').value.trim(), email: $('f-email').value.trim(), senha: $('f-senha').value });
+  if (!r.ok) return msg('f-msg', r.motivo || 'Não foi possível criar.');
+  msg('f-msg', `Acesso criado. Mande para o fiscal: painel ${location.href.split('?')[0]} · e-mail ${$('f-email').value.trim()} · senha ${$('f-senha').value}. No celular dele, abra o painel e toque em "Ativar avisos neste celular".`, true);
+  e.target.reset(); carregarAvisos();
+}
+async function removerFiscal(id, nome) {
+  if (!confirm(`Remover o acesso de ${nome}? Ele não entra mais no painel nem recebe avisos.`)) return;
+  const r = await chamarAvisos({ acao: 'remover_fiscal', user_id: id });
+  msg('f-msg', r.ok ? 'Acesso removido.' : (r.motivo || 'Não foi possível remover.'), r.ok); carregarAvisos();
 }
 
 // ---------- BLOQUEIOS ----------
